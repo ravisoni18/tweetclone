@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/patr/static/css/main.018401e8.css",
+    "main.js": "/patr/static/js/main.3b5b354e.js",
+    "static/js/453.a7f9de9c.chunk.js": "/patr/static/js/453.a7f9de9c.chunk.js",
+    "index.html": "/patr/index.html",
+    "main.018401e8.css.map": "/patr/static/css/main.018401e8.css.map",
+    "main.3b5b354e.js.map": "/patr/static/js/main.3b5b354e.js.map",
+    "453.a7f9de9c.chunk.js.map": "/patr/static/js/453.a7f9de9c.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.018401e8.css",
+    "static/js/main.3b5b354e.js"
+  ]
+}

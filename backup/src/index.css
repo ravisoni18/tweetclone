@@ -1,0 +1,88 @@
+body {
+  background-color: var(--bg, #000000);
+  color: var(--text, #ffffff);
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+/* Theme variable overrides */
+body {
+  background-color: var(--bg, #000000) !important;
+  color: var(--text, #ffffff) !important;
+}
+
+/* Sidebar and main panels */
+.bg-black { background-color: var(--bg) !important; }
+.bg-gray-900 { background-color: var(--widget, #111827) !important; }
+.bg-gray-950 { background-color: var(--bg-secondary, #030712) !important; }
+.border-gray-800 { border-color: var(--border) !important; }
+.text-white { color: var(--text) !important; }
+.text-gray-400 { color: var(--text-dim) !important; }
+.text-gray-500 { color: var(--text-dim) !important; }
+.hover\:bg-gray-800:hover { background-color: var(--hover) !important; }
+.hover\:bg-gray-900:hover { background-color: var(--hover) !important; }
+
+/* Accent color */
+.bg-blue-500 { background-color: var(--accent) !important; }
+.hover\:bg-blue-600:hover { background-color: var(--accent-hover) !important; }
+.border-blue-400 { border-color: var(--accent) !important; }
+.text-blue-400 { color: var(--accent) !important; }
+
+/* Backdrop blur panels */
+.backdrop-blur-xl { background-color: var(--bg) !important; }
+
+/* Light theme specific fixes */
+body[style*="#f9f7f4"] .text-gray-300,
+body[style*="#f9f7f4"] .text-gray-400,
+body[style*="#f9f7f4"] .text-gray-500 {
+  color: var(--text-dim) !important;
+}
+
+body[style*="#f9f7f4"] .text-white {
+  color: var(--text) !important;
+}
+
+/* Article content in light theme - fix hardcoded white text */
+body[style*="#f9f7f4"] .article-content {
+  color: var(--text) !important;
+}
+
+body[style*="#f9f7f4"] .article-content p,
+body[style*="#f9f7f4"] .article-content h1,
+body[style*="#f9f7f4"] .article-content h2,
+body[style*="#f9f7f4"] .article-content h3,
+body[style*="#f9f7f4"] .article-content h4,
+body[style*="#f9f7f4"] .article-content li,
+body[style*="#f9f7f4"] .article-content strong {
+  color: var(--text) !important;
+}
+
+/* Sidebar active state in light theme */
+body[style*="#f9f7f4"] .bg-gray-900 {
+  background-color: var(--widget) !important;
+}
+
+/* Post button in light theme */
+body[style*="#f9f7f4"] .bg-blue-500 {
+  background-color: var(--accent) !important;
+}
+
+/* Borders in light theme */
+body[style*="#f9f7f4"] .border-gray-800,
+body[style*="#f9f7f4"] .border-gray-700 {
+  border-color: var(--border) !important;
+}
+
+/* Search input in light theme */
+body[style*="#f9f7f4"] input {
+  color: var(--text) !important;
+  background-color: var(--search-bg) !important;
+}
+
+/* Hover states in light theme */
+body[style*="#f9f7f4"] .hover\:bg-gray-900:hover,
+body[style*="#f9f7f4"] .hover\:bg-gray-800:hover {
+  background-color: var(--hover) !important;
+}
