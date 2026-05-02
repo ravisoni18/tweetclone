@@ -343,9 +343,14 @@ export const getAvatarUrl = (user: User): string => {
   return user.profileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=6366f1&color=ffffff&size=128`;
 };
 
+export type InviteStatus = 'idle' | 'pending' | 'rejected' | 'approved';
+
 export interface AuthContextType {
   user: User | null;
   loading: boolean;
+  inviteStatus: InviteStatus;
+  pendingUserName: string;
+  clearInviteStatus: () => void;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: UpdateUserData) => Promise<void>;

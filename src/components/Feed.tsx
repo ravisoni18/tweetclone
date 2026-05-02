@@ -62,16 +62,22 @@ const Feed: React.FC<FeedProps> = ({ type = 'home', showCompose = true, onUserCl
   }, []);
 
   // Helper function to get auth token
+  // Falls back to localStorage if Firebase hasn't initialized auth.currentUser yet
   const getAuthToken = async (): Promise<string> => {
     try {
       const currentUser = auth.currentUser;
-      if (!currentUser) return '';
-      
-      const token = await currentUser.getIdToken(true);
-      return token;
+      if (currentUser) {
+        const token = await currentUser.getIdToken();
+        // Keep localStorage in sync
+        localStorage.setItem('authToken', token);
+        return token;
+      }
+      // Firebase not initialized yet — use the cached token from AuthContext
+      const cached = localStorage.getItem('authToken');
+      return cached || '';
     } catch (error) {
       console.error('Error getting auth token:', error);
-      return '';
+      return localStorage.getItem('authToken') || '';
     }
   };
 
@@ -330,6 +336,7 @@ const Feed: React.FC<FeedProps> = ({ type = 'home', showCompose = true, onUserCl
   };
 
   // UPDATED: Load posts or articles based on active tab
+  // 'user' is in deps so the feed re-fetches once Firebase auth resolves (fixes empty-token race)
   useEffect(() => {
     if (!showProfile && !showPostDetail) {
       if (activeTab === 'articles') {
@@ -338,7 +345,7 @@ const Feed: React.FC<FeedProps> = ({ type = 'home', showCompose = true, onUserCl
         loadPosts();
       }
     }
-  }, [type, activeTab, showProfile, showPostDetail]);
+  }, [type, activeTab, showProfile, showPostDetail, user?.id]);
 
   useEffect(() => {
     const delayedSearch = setTimeout(() => {

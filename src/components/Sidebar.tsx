@@ -79,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
               onClick={() => onTabChange(item.key)}
               style={{
                 color:           isActive ? 'var(--text, #e7e9ea)'    : 'var(--text-dim, #71767b)',
-                backgroundColor: isActive ? 'var(--hover, rgba(255,255,255,0.06))' : 'transparent',
+                backgroundColor: isActive ? 'var(--active-bg, rgba(255,255,255,0.10))' : 'transparent',
               }}
               className="w-full flex items-center space-x-3 px-4 py-3 rounded-full text-left transition-all duration-150 group"
               onMouseEnter={e => {

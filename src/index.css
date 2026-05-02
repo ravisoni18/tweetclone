@@ -33,18 +33,88 @@ body {
 /* Backdrop blur panels */
 .backdrop-blur-xl { background-color: var(--bg) !important; }
 
-/* Light theme specific fixes */
-body[style*="#f9f7f4"] .text-gray-300,
-body[style*="#f9f7f4"] .text-gray-400,
-body[style*="#f9f7f4"] .text-gray-500 {
-  color: var(--text-dim) !important;
-}
-
-body[style*="#f9f7f4"] .text-white {
+/* ─── Paper (light) theme overrides ─── */
+/* Trigger: body background is the Paper cream colour */
+body[style*="#f9f7f4"] {
   color: var(--text) !important;
 }
 
-/* Article content in light theme - fix hardcoded white text */
+/* Main text that is normally white → use dark text in Paper */
+body[style*="#f9f7f4"] .text-white,
+body[style*="#f9f7f4"] .text-gray-100,
+body[style*="#f9f7f4"] .text-gray-200 {
+  color: var(--text) !important;
+}
+
+/* Secondary / dim text — all gray variants → use textDim (#4a3d36) */
+body[style*="#f9f7f4"] .text-gray-300,
+body[style*="#f9f7f4"] .text-gray-400,
+body[style*="#f9f7f4"] .text-gray-500,
+body[style*="#f9f7f4"] .text-gray-600 {
+  color: var(--text-dim) !important;
+}
+
+/* Darker grays should stay close to main text colour */
+body[style*="#f9f7f4"] .text-gray-700,
+body[style*="#f9f7f4"] .text-gray-800,
+body[style*="#f9f7f4"] .text-gray-900 {
+  color: var(--text) !important;
+}
+
+/* Backgrounds */
+body[style*="#f9f7f4"] .bg-black,
+body[style*="#f9f7f4"] .bg-gray-950 {
+  background-color: var(--bg-secondary) !important;
+}
+
+body[style*="#f9f7f4"] .bg-gray-900,
+body[style*="#f9f7f4"] .bg-gray-800 {
+  background-color: var(--widget) !important;
+}
+
+/* Sidebar active state */
+body[style*="#f9f7f4"] .bg-gray-900 {
+  background-color: var(--widget) !important;
+}
+
+/* Borders */
+body[style*="#f9f7f4"] .border-gray-800,
+body[style*="#f9f7f4"] .border-gray-700,
+body[style*="#f9f7f4"] .border-gray-600 {
+  border-color: var(--border) !important;
+}
+
+/* Inputs / search boxes */
+body[style*="#f9f7f4"] input,
+body[style*="#f9f7f4"] textarea {
+  color: var(--text) !important;
+  background-color: var(--search-bg) !important;
+}
+
+body[style*="#f9f7f4"] input::placeholder,
+body[style*="#f9f7f4"] textarea::placeholder {
+  color: var(--text-dim) !important;
+  opacity: 0.7;
+}
+
+/* Hover states */
+body[style*="#f9f7f4"] .hover\:bg-gray-900:hover,
+body[style*="#f9f7f4"] .hover\:bg-gray-800:hover {
+  background-color: var(--hover) !important;
+}
+
+/* Post/compose box */
+body[style*="#f9f7f4"] .bg-blue-500 {
+  background-color: var(--accent) !important;
+}
+
+/* Accent / interactive text */
+body[style*="#f9f7f4"] .text-blue-400,
+body[style*="#f9f7f4"] .text-blue-500 {
+  color: var(--accent) !important;
+}
+
+/* Article content */
 body[style*="#f9f7f4"] .article-content {
   color: var(--text) !important;
 }
@@ -55,34 +125,21 @@ body[style*="#f9f7f4"] .article-content h2,
 body[style*="#f9f7f4"] .article-content h3,
 body[style*="#f9f7f4"] .article-content h4,
 body[style*="#f9f7f4"] .article-content li,
-body[style*="#f9f7f4"] .article-content strong {
+body[style*="#f9f7f4"] .article-content strong,
+body[style*="#f9f7f4"] .article-content span {
   color: var(--text) !important;
 }
 
-/* Sidebar active state in light theme */
-body[style*="#f9f7f4"] .bg-gray-900 {
+/* Dropdown menus / popups that use dark bg */
+body[style*="#f9f7f4"] [class*="bg-gray"] {
   background-color: var(--widget) !important;
 }
 
-/* Post button in light theme */
-body[style*="#f9f7f4"] .bg-blue-500 {
-  background-color: var(--accent) !important;
+/* Scrollbar in light theme */
+body[style*="#f9f7f4"] ::-webkit-scrollbar-thumb {
+  background-color: var(--border) !important;
 }
 
-/* Borders in light theme */
-body[style*="#f9f7f4"] .border-gray-800,
-body[style*="#f9f7f4"] .border-gray-700 {
-  border-color: var(--border) !important;
-}
-
-/* Search input in light theme */
-body[style*="#f9f7f4"] input {
-  color: var(--text) !important;
-  background-color: var(--search-bg) !important;
-}
-
-/* Hover states in light theme */
-body[style*="#f9f7f4"] .hover\:bg-gray-900:hover,
-body[style*="#f9f7f4"] .hover\:bg-gray-800:hover {
-  background-color: var(--hover) !important;
+body[style*="#f9f7f4"] ::-webkit-scrollbar-track {
+  background-color: var(--bg) !important;
 }

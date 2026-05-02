@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Patr",
+    "slug": "patr-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "patr",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#000000"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ravisoni.patrme",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.964264491610-i0dm3jcedvnebrh6ke44ngv82derm4ee"
+            ]
+          }
+        ],
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "We need camera access to let you take photos and videos for your posts.",
+        "NSPhotoLibraryUsageDescription": "We need photo library access to let you upload images and videos from your device.",
+        "NSMicrophoneUsageDescription": "We need microphone access to record audio when capturing videos."
+      }
+    },
+    "android": {
+      "package": "com.ravisoni.patrme",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#000000"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "0b5cbc3f-a1cd-4bf8-9155-2fc331548595"
+      }
+    },
+    "plugins": []
+  }
+}

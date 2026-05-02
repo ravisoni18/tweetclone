@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Image, Video, X, Globe, Users, Lock, FileText } from 'lucide-react';
+import { Image, Video, X, Globe, Users, Lock, FileText, Camera } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { auth } from '../config/firebase';
 import ArticleEditor from './ArticleEditor';
@@ -15,12 +15,12 @@ const resizeImage = (file: File, maxSizeMB: number = 2, quality: number = 0.8): 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = document.createElement('img');
-    
+
     img.onload = () => {
       // Calculate new dimensions to maintain aspect ratio
       let { width, height } = img;
       const maxDimension = 1920; // Max width or height
-      
+
       if (width > height && width > maxDimension) {
         height = (height * maxDimension) / width;
         width = maxDimension;
@@ -28,13 +28,13 @@ const resizeImage = (file: File, maxSizeMB: number = 2, quality: number = 0.8): 
         width = (width * maxDimension) / height;
         height = maxDimension;
       }
-      
+
       canvas.width = width;
       canvas.height = height;
-      
+
       // Draw and compress
       ctx?.drawImage(img, 0, 0, width, height);
-      
+
       // Convert to blob with quality compression
       canvas.toBlob(
         (blob) => {
@@ -43,9 +43,9 @@ const resizeImage = (file: File, maxSizeMB: number = 2, quality: number = 0.8): 
               type: file.type,
               lastModified: Date.now(),
             });
-            
+
             console.log(`📷 Image resized: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(resizedFile.size / 1024 / 1024).toFixed(2)}MB`);
-            
+
             // Check if still too large, reduce quality further
             if (resizedFile.size > maxSizeMB * 1024 * 1024 && quality > 0.3) {
               console.log('🔄 Still too large, reducing quality further...');
@@ -60,16 +60,16 @@ const resizeImage = (file: File, maxSizeMB: number = 2, quality: number = 0.8): 
         file.type,
         quality
       );
-      
+
       // Clean up object URL
       URL.revokeObjectURL(img.src);
     };
-    
+
     img.onerror = () => {
       URL.revokeObjectURL(img.src);
       reject(new Error('Failed to load image'));
     };
-    
+
     img.src = URL.createObjectURL(file);
   });
 };
@@ -81,7 +81,7 @@ const compressVideo = async (file: File, maxSizeMB: number = 10): Promise<File> 
   if (file.size > maxSizeMB * 1024 * 1024) {
     throw new Error(`Video file is too large. Maximum size is ${maxSizeMB}MB`);
   }
-  
+
   console.log(`🎥 Video accepted: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB`);
   return file;
 };
@@ -104,7 +104,7 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -125,7 +125,7 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
         console.log('No Firebase user found');
         return '';
       }
-      
+
       const token = await currentUser.getIdToken(true);
       return token;
     } catch (error) {
@@ -153,13 +153,13 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
       console.log(`📁 ${type} selected: ${file.name}, Size: ${(file.size / 1024 / 1024).toFixed(2)}MB, Type: ${file.type}`);
 
       let processedFile = file;
-      
+
       if (type === 'image') {
         // Validate image type
         if (!file.type.startsWith('image/')) {
           throw new Error('Please select a valid image file');
         }
-        
+
         // Process image if needed
         const maxSizeMB = 5; // Increased for better quality
         if (file.size > maxSizeMB * 1024 * 1024) {
@@ -172,14 +172,14 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
       } else if (type === 'video') {
         // Validate video type
         const allowedVideoTypes = [
-          'video/mp4', 'video/mpeg', 'video/quicktime', 'video/webm', 
+          'video/mp4', 'video/mpeg', 'video/quicktime', 'video/webm',
           'video/ogg', 'video/3gpp', 'video/x-msvideo'
         ];
-        
+
         if (!allowedVideoTypes.includes(file.type)) {
           throw new Error('Please select a valid video file (MP4, WebM, MOV, AVI, etc.)');
         }
-        
+
         // Process video
         const maxSizeMB = 50; // 50MB limit for videos
         processedFile = await compressVideo(file, maxSizeMB);
@@ -197,7 +197,7 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
 
     } catch (error) {
       console.error(`❌ Error processing ${type}:`, error);
-      
+
       const errorMessage = error instanceof Error ? error.message : `Failed to process ${type}. Please try a different file.`;
       if (isMobile) {
         alert(errorMessage);
@@ -228,10 +228,10 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
 
   const showValidationError = (message: string) => {
     setValidationError(message);
-    
+
     // Show prominent error dialog
     alert(`❌ Validation Error\n\n${message}`);
-    
+
     // Focus on textarea to guide user
     const textarea = document.querySelector('textarea');
     if (textarea) {
@@ -243,12 +243,12 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
   const handlePostButtonClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     console.log('🖱️ Post button clicked, validating...');
-    
+
     // Clear any existing validation errors
     setValidationError(null);
-    
+
     if (!user) {
       console.error('❌ User not authenticated');
       showValidationError('Please log in to post');
@@ -258,12 +258,12 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
     // MANDATORY TEXT VALIDATION: Show error dialog if no text
     if (!content.trim()) {
       console.error('❌ Text content is required for all posts');
-      
+
       // Show contextual error dialog
-      const message = selectedMedia 
+      const message = selectedMedia
         ? 'Please add some text to describe your image/video'
         : 'Please write something for your post';
-      
+
       showValidationError(message);
       return;
     }
@@ -281,24 +281,24 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
     }
 
     console.log('✅ All validations passed, proceeding with submission');
-    
+
     // If all validations pass, proceed with form submission
     onSubmit(e as any);
   };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Additional null check for user
     if (!user) {
       console.error('❌ User not authenticated in onSubmit');
       showValidationError('Please log in to post');
       return;
     }
-    
+
     try {
       setIsLoading(true);
-      
+
       console.log('🚀 Starting post creation...');
       console.log('📝 Content:', content.substring(0, 50) + '...');
       console.log('🎬 Has media:', !!selectedMedia, 'Type:', mediaType);
@@ -322,16 +322,16 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
 
       // Create FormData with current user information
       const formData = new FormData();
-      
+
       // Add the validated content (guaranteed to have text now)
       formData.append('content', content.trim());
-      
+
       // Add current user data to the request
       formData.append('userId', firebaseUser.uid);
       formData.append('userEmail', firebaseUser.email || '');
       formData.append('userName', firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User');
       formData.append('userPhoto', firebaseUser.photoURL || '');
-      
+
       if (selectedMedia) {
         // Use different field names for different media types
         const fieldName = mediaType === 'video' ? 'video' : 'image';
@@ -354,7 +354,7 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.log('❌ API Error:', response.status, errorData);
-        
+
         if (response.status === 401) {
           throw new Error('Authentication failed. Please try logging out and back in.');
         } else if (response.status === 400) {
@@ -371,23 +371,23 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
 
       // Reset form immediately
       resetForm();
-      
+
       // Mobile-aware refresh strategy
       if (onPostCreated) {
         console.log('🔄 Post created, executing refresh strategy');
-        
+
         if (isMobile) {
           console.log('📱 Mobile detected - using enhanced refresh');
-          
+
           // Immediate callback
           onPostCreated(result);
-          
+
           // Backup refresh for mobile
           setTimeout(() => {
             console.log('📱 Mobile backup refresh');
             onPostCreated(result);
           }, 500);
-          
+
         } else {
           // Desktop - immediate callback
           console.log('🖥️ Desktop detected - immediate callback');
@@ -400,7 +400,7 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
     } catch (error) {
       console.error('❌ Error creating post:', error);
       setIsLoading(false);
-      
+
       // Show user-friendly error message
       const errorMessage = error instanceof Error ? error.message : 'Failed to create post. Please try again.';
       showValidationError(errorMessage);
@@ -467,7 +467,7 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
                   }}
                 />
               ) : null}
-              <div 
+              <div
                 className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold ${isMobile ? 'text-sm' : ''}`}
                 style={{ display: userProfileImage ? 'none' : 'flex' }}
               >
@@ -541,7 +541,7 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
                       Your browser does not support the video tag.
                     </video>
                   ) : null}
-                  
+
                   <button
                     type="button"
                     onClick={removeMedia}
@@ -550,7 +550,7 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
                   >
                     <X className="w-4 h-4 text-white" />
                   </button>
-                  
+
                   {selectedMedia && (
                     <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
                       {mediaType?.toUpperCase()} - {(selectedMedia.size / 1024 / 1024).toFixed(2)}MB
@@ -563,7 +563,7 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
               <div className={`flex items-center justify-between ${isMobile ? 'mt-3 pt-3' : 'mt-4 pt-4'} border-t border-gray-800`} style={{ borderColor: 'var(--border)' }}>
                 <div className="flex items-center space-x-3 sm:space-x-4">
                   {/* Image Upload */}
-                  <label className={`cursor-pointer text-blue-400 hover:text-blue-300 transition-colors touch-manipulation ${isMobile ? 'p-2' : ''} ${isProcessingMedia || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <label className={`cursor-pointer text-blue-400 hover:text-blue-300 transition-colors touch-manipulation ${isMobile ? 'p-2' : ''} ${isProcessingMedia || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`} title="Upload Image">
                     <Image className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} />
                     <input
                       type="file"
@@ -575,12 +575,31 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
                   </label>
 
                   {/* Video Upload */}
-                  <label className={`cursor-pointer text-purple-400 hover:text-purple-300 transition-colors touch-manipulation ${isMobile ? 'p-2' : ''} ${isProcessingMedia || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  <label className={`cursor-pointer text-purple-400 hover:text-purple-300 transition-colors touch-manipulation ${isMobile ? 'p-2' : ''} ${isProcessingMedia || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`} title="Upload Video">
                     <Video className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} />
                     <input
                       type="file"
                       accept="video/*"
                       onChange={(e) => handleMediaSelect(e, 'video')}
+                      className="hidden"
+                      disabled={isLoading || isProcessingMedia}
+                    />
+                  </label>
+
+                  {/* Camera Capture - NEW */}
+                  <label className={`cursor-pointer text-red-400 hover:text-red-300 transition-colors touch-manipulation ${isMobile ? 'p-2' : ''} ${isProcessingMedia || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`} title="Open Camera">
+                    <Camera className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} />
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      capture="environment"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const mediaType = file.type.startsWith('image/') ? 'image' : 'video';
+                          handleMediaSelect(e as any, mediaType);
+                        }
+                      }}
                       className="hidden"
                       disabled={isLoading || isProcessingMedia}
                     />
