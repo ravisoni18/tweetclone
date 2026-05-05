@@ -21,9 +21,17 @@ export default function LoginScreen() {
 
       // Sign in with native Google account picker
       console.log('Starting native Google Sign-In...');
-      const response: any = await GoogleSignin.signIn();
+      const response = await GoogleSignin.signIn();
 
-      const idToken = response?.idToken;
+      // v13+ of @react-native-google-signin/google-signin returns a discriminated
+      // union: { type: 'success', data: User } | { type: 'cancelled', data: null }
+      if (response.type === 'cancelled') {
+        console.log('Sign-in cancelled by user');
+        setLoading(false);
+        return;
+      }
+
+      const idToken = response.data?.idToken;
 
       if (!idToken) {
         console.error('Response:', response);
