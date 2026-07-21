@@ -1,26 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  SafeAreaView, Image, Alert, ActivityIndicator, ScrollView,
+  Image, Alert, ActivityIndicator, ScrollView,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../config/firebase';
 
 const API = 'https://patr.me/api';
+const MAX_VIDEO_MB = 50;
+const MAX_VIDEO_BYTES = MAX_VIDEO_MB * 1024 * 1024;
 
 export default function ComposePostScreen() {
   const { theme } = useTheme();
-  const { user, getToken } = useAuth();
+  const { user } = useAuth();
   const navigation = useNavigation();
 
   const [content, setContent] = useState('');
   const [mediaUri, setMediaUri] = useState<string | null>(null);
   const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
+  const [mediaMimeType, setMediaMimeType] = useState<string | null>(null);
+  const [mediaFilename, setMediaFilename] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const insets = useSafeAreaInsets();
 
   // Request permissions on mount
     useEffect(() => {
@@ -43,8 +50,11 @@ export default function ComposePostScreen() {
         quality: 0.8,
       });
       if (!res.canceled && res.assets[0]) {
-        setMediaUri(res.assets[0].uri);
+        const asset = res.assets[0];
+        setMediaUri(asset.uri);
         setMediaType('image');
+        setMediaMimeType(asset.mimeType || 'image/jpeg');
+        setMediaFilename(asset.fileName || null);
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to access photo library. Please try again.');
@@ -65,8 +75,16 @@ export default function ComposePostScreen() {
         quality: 0.8,
       });
       if (!res.canceled && res.assets[0]) {
-        setMediaUri(res.assets[0].uri);
+        const asset = res.assets[0];
+        if (asset.fileSize && asset.fileSize > MAX_VIDEO_BYTES) {
+          const mb = (asset.fileSize / 1024 / 1024).toFixed(1);
+          Alert.alert('Video Too Large', `Your video is ${mb}MB. Please select a video under ${MAX_VIDEO_MB}MB.`);
+          return;
+        }
+        setMediaUri(asset.uri);
         setMediaType('video');
+        setMediaMimeType(asset.mimeType || 'video/mp4');
+        setMediaFilename(asset.fileName || null);
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to access photo library. Please try again.');
@@ -90,8 +108,16 @@ export default function ComposePostScreen() {
       });
       if (!res.canceled && res.assets[0]) {
         const asset = res.assets[0];
+        const type = asset.type === 'video' ? 'video' : 'image';
+        if (type === 'video' && asset.fileSize && asset.fileSize > MAX_VIDEO_BYTES) {
+          const mb = (asset.fileSize / 1024 / 1024).toFixed(1);
+          Alert.alert('Video Too Large', `Your video is ${mb}MB. Please record a shorter video under ${MAX_VIDEO_MB}MB.`);
+          return;
+        }
         setMediaUri(asset.uri);
-        setMediaType(asset.type === 'video' ? 'video' : 'image');
+        setMediaType(type);
+        setMediaMimeType(asset.mimeType || (type === 'video' ? 'video/mp4' : 'image/jpeg'));
+        setMediaFilename(asset.fileName || null);
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to open camera. Please try again.');
@@ -103,21 +129,45 @@ export default function ComposePostScreen() {
     if (!canPost) return;
     setLoading(true);
     try {
-      const token = await getToken();
+      // Mirror the web ComposePost: access auth.currentUser directly and
+      // force-refresh the token so a stale cached token is never sent.
+      await auth.authStateReady();
+      const firebaseUser = auth.currentUser;
+      if (!firebaseUser) throw new Error('Not authenticated. Please log in again.');
+
+      const token = await firebaseUser.getIdToken(true);
+
       const form = new FormData();
       form.append('content', content.trim());
+      // Send user identity fields — the web sends these and the server uses them
+      form.append('userId', firebaseUser.uid);
+      form.append('userEmail', firebaseUser.email || '');
+      form.append('userName', firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User');
+      form.append('userPhoto', firebaseUser.photoURL || '');
+
       if (mediaUri && mediaType) {
-        const filename = mediaUri.split('/').pop() || (mediaType === 'video' ? 'video.mp4' : 'image.jpg');
-        const mimeType = mediaType === 'image' ? 'image/jpeg' : 'video/mp4';
-        form.append(mediaType, { uri: mediaUri, name: filename, type: mimeType } as any);
-        console.log(`📸 Uploading ${mediaType}: ${filename}`);
+        const mimeType = mediaMimeType || (mediaType === 'video' ? 'video/mp4' : 'image/jpeg');
+        const ext = mimeType.split('/')[1]?.split(';')[0] || (mediaType === 'video' ? 'mp4' : 'jpg');
+        const filename = mediaFilename || `${mediaType}.${ext}`;
+        form.append(mediaType === 'image' ? 'image' : 'video', { uri: mediaUri, name: filename, type: mimeType } as any);
+        form.append('mediaType', mediaType);
       }
-      const res = await fetch(`${API}/posts`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
+
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API}/posts`);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Failed to post (${xhr.status})`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Network error. Please try again.'));
+        xhr.send(form);
       });
-      if (!res.ok) throw new Error('Failed to post');
+
       navigation.goBack();
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Could not create post');
@@ -129,10 +179,10 @@ export default function ComposePostScreen() {
   const s = styles(theme);
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={['top']}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Toolbar */}
         <View style={s.toolbar}>
@@ -183,7 +233,7 @@ export default function ComposePostScreen() {
               <Image source={{ uri: mediaUri }} style={s.mediaPreview} resizeMode="cover" />
               <TouchableOpacity
                 style={s.removeMedia}
-                onPress={() => { setMediaUri(null); setMediaType(null); }}
+                onPress={() => { setMediaUri(null); setMediaType(null); setMediaMimeType(null); setMediaFilename(null); }}
               >
                 <Ionicons name="close-circle" size={28} color="#fff" />
               </TouchableOpacity>
@@ -192,7 +242,7 @@ export default function ComposePostScreen() {
         </ScrollView>
 
         {/* Bottom actions */}
-        <View style={s.bottomBar}>
+        <View style={[s.bottomBar, { paddingBottom: insets.bottom + 10 }]}>
           <TouchableOpacity onPress={pickImage} style={s.mediaBtn} disabled={loading}>
             <Ionicons name="image-outline" size={24} color="#3b82f6" />
           </TouchableOpacity>

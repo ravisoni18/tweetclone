@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View, Text, Image, TouchableOpacity, StyleSheet, Linking,
+  View, Text, Image, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Post } from '../types';
@@ -36,6 +37,76 @@ function fmtCount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
   return String(n);
 }
+
+function InlineVideo({ uri }: { uri: string }) {
+  const [playing, setPlaying] = useState(false);
+  const [muted, setMuted]     = useState(true);
+  const [progress, setProgress] = useState(0);
+
+  const player = useVideoPlayer(uri, p => {
+    p.loop  = false;
+    p.muted = true;
+  });
+
+  // Poll playback position while playing; detect end-of-video
+  useEffect(() => {
+    if (!playing) return;
+    const id = setInterval(() => {
+      const dur = player.duration;
+      if (dur > 0) setProgress(player.currentTime / dur);
+      if (!player.playing) { setPlaying(false); setProgress(0); }
+    }, 200);
+    return () => clearInterval(id);
+  }, [playing]);
+
+  const togglePlay = () => {
+    if (playing) { player.pause(); setPlaying(false); }
+    else         { player.play();  setPlaying(true);  }
+  };
+
+  const toggleMute = () => {
+    const next = !muted;
+    player.muted = next;
+    setMuted(next);
+  };
+
+  return (
+    <View style={vStyles.wrap}>
+      <VideoView player={player} style={vStyles.video} nativeControls={false} contentFit="cover" />
+
+      {/* Tap area for play/pause — stops above the bottom bar */}
+      <TouchableOpacity onPress={togglePlay} activeOpacity={1}
+        style={[StyleSheet.absoluteFillObject, { bottom: 32 }]} />
+
+      {/* Play icon centred in the tap area */}
+      {!playing && (
+        <View pointerEvents="none" style={vStyles.playOverlay}>
+          <Ionicons name="play-circle" size={54} color="rgba(255,255,255,0.88)" />
+        </View>
+      )}
+
+      {/* Bottom bar: progress scrubber + mute button */}
+      <View style={vStyles.bar} pointerEvents="box-none">
+        <View style={vStyles.progressBg} pointerEvents="none">
+          <View style={[vStyles.progressFill, { width: `${Math.round(progress * 100)}%` as any }]} />
+        </View>
+        <TouchableOpacity onPress={toggleMute} style={vStyles.muteBtn}>
+          <Ionicons name={muted ? 'volume-mute' : 'volume-high'} size={15} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const vStyles = StyleSheet.create({
+  wrap:         { width: '100%', height: 200, borderRadius: 14, overflow: 'hidden', marginBottom: 10, backgroundColor: '#000' },
+  video:        { width: '100%', height: '100%' },
+  playOverlay:  { ...StyleSheet.absoluteFillObject, bottom: 32, alignItems: 'center', justifyContent: 'center' },
+  bar:          { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 7 },
+  progressBg:   { flex: 1, height: 3, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 2, marginRight: 8, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: '#fff', borderRadius: 2 },
+  muteBtn:      { width: 26, height: 26, borderRadius: 13, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
+});
 
 export default function PostCard({ post, onUserPress, onPostPress }: Props) {
   const { theme } = useTheme();
@@ -147,18 +218,8 @@ export default function PostCard({ post, onUserPress, onPostPress }: Props) {
           </>
         ) : null}
 
-        {/* Video — tap to open in system player (no native module needed) */}
         {!post.imageUrl && post.videoUrl ? (
-          <TouchableOpacity
-            style={s.videoThumb}
-            onPress={() => Linking.openURL(post.videoUrl!)}
-            activeOpacity={0.85}
-          >
-            <View style={s.playBtn}>
-              <Ionicons name="play-circle" size={52} color="rgba(255,255,255,0.92)" />
-            </View>
-            <Text style={s.videoLabel}>Tap to play video</Text>
-          </TouchableOpacity>
+          <InlineVideo uri={post.videoUrl} />
         ) : null}
 
         {/* Star rating */}
@@ -274,25 +335,6 @@ const styles = (theme: any) =>
       height: 200,
       borderRadius: 14,
       marginBottom: 10,
-    },
-    videoThumb: {
-      width: '100%',
-      height: 180,
-      borderRadius: 14,
-      marginBottom: 10,
-      backgroundColor: '#111',
-      alignItems: 'center',
-      justifyContent: 'center',
-      overflow: 'hidden',
-    },
-    playBtn: {
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    videoLabel: {
-      color: 'rgba(255,255,255,0.6)',
-      fontSize: 13,
-      marginTop: 8,
     },
     rating: {
       flexDirection: 'row',

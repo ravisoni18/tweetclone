@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  ActivityIndicator, RefreshControl, SafeAreaView, TextInput,
+  ActivityIndicator, RefreshControl,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -19,7 +20,7 @@ const API = 'https://patr.me/api';
 
 export default function HomeScreen() {
   const { theme } = useTheme();
-  const { user, getToken } = useAuth();
+  const { getToken } = useAuth();
   const navigation = useNavigation<Nav>();
 
   const [tab, setTab] = useState<FeedTab>('following');
@@ -47,6 +48,8 @@ export default function HomeScreen() {
   }, [tab, getToken]);
 
   useEffect(() => { fetchPosts(tab); }, [tab]);
+
+  useFocusEffect(useCallback(() => { fetchPosts(tab, true); }, [tab]));
 
   const onRefresh = () => {
     setRefreshing(true);

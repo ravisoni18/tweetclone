@@ -165,17 +165,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const getToken = useCallback(async (): Promise<string> => {
-    try {
-      const firebaseUser = auth.currentUser;
-      if (firebaseUser) {
-        const token = await firebaseUser.getIdToken();
-        await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
-        return token;
-      }
-      return (await AsyncStorage.getItem(TOKEN_STORAGE_KEY)) || '';
-    } catch {
-      return (await AsyncStorage.getItem(TOKEN_STORAGE_KEY)) || '';
+    // Wait for Firebase to finish restoring auth state — on Android this is
+    // async and currentUser is null until ready.
+    await auth.authStateReady();
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) {
+      throw new Error('Not authenticated. Please log in again.');
     }
+    // Force-refresh matches the web service behaviour and ensures a stale
+    // cached token is never sent to the server.
+    const token = await firebaseUser.getIdToken(true);
+    await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
+    return token;
   }, []);
 
   return (
