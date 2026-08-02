@@ -28,7 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
   };
 
   const navigation = [
-    { name: 'Home',          icon: Home,     key: 'home' },
+    { name: 'Home1',          icon: Home,     key: 'home' },
     { name: 'Explore',       icon: Search,   key: 'explore' },
     { name: 'Notifications', icon: Bell,     key: 'notifications' },
     { name: 'Messages',      icon: Mail,     key: 'messages' },
