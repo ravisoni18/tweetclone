@@ -31,7 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
     { name: 'Home1',          icon: Home,     key: 'home' },
     { name: 'Explore1',       icon: Search,   key: 'explore' },
     { name: 'Notifications1', icon: Bell,     key: 'notifications' },
-    { name: 'Messages',      icon: Mail,     key: 'messages' },
+    { name: 'Messages1',      icon: Mail,     key: 'messages' },
     { name: 'Bookmarks',     icon: Bookmark, key: 'bookmarks' },
     { name: 'Profile',       icon: User,     key: 'profile' },
     { name: 'Settings',      icon: Settings, key: 'settings' },
