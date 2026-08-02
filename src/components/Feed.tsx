@@ -187,7 +187,7 @@ const Feed: React.FC<FeedProps> = ({ type = 'home', showCompose = true, onUserCl
       
       console.log('📡 Fetching posts with enhanced cache busting:', cacheParams.toString());
       
-      const response = await fetch(`https://patr.me/api/posts/feed?${cacheParams.toString()}`, {
+      const response = await fetch(`/api/posts/feed?${cacheParams.toString()}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -235,7 +235,7 @@ const Feed: React.FC<FeedProps> = ({ type = 'home', showCompose = true, onUserCl
       
       console.log('📚 Loading articles...');
       
-      const response = await fetch(`https://patr.me/api/articles?status=published&limit=50`, {
+      const response = await fetch(`/api/articles?status=published&limit=50`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -271,7 +271,7 @@ const Feed: React.FC<FeedProps> = ({ type = 'home', showCompose = true, onUserCl
       setSearchLoading(true);
       const token = await getAuthToken();
       
-      const response = await fetch(`https://patr.me/api/users/search?q=${encodeURIComponent(query)}`, {
+      const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -302,7 +302,7 @@ const Feed: React.FC<FeedProps> = ({ type = 'home', showCompose = true, onUserCl
       const token = await getAuthToken();
       const userData = getCurrentUserData();
       
-      const response = await fetch(`https://patr.me/api/follow/${userId}`, {
+      const response = await fetch(`/api/follow/${userId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -58,7 +58,7 @@ const ArticleViewer: React.FC<ArticleViewerProps> = ({ articleId, onBack }) => {
       try {
         setLoading(true);
         const token = await getAuthToken();
-        const res = await fetch(`https://patr.me/api/articles/${articleId}`, {
+        const res = await fetch(`/api/articles/${articleId}`, {
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
         });
         if (res.ok) setArticle(await res.json());
@@ -73,7 +73,7 @@ const ArticleViewer: React.FC<ArticleViewerProps> = ({ articleId, onBack }) => {
     try {
       setLikeLoading(true);
       const token = await getAuthToken();
-      const res = await fetch(`https://patr.me/api/articles/${articleId}/like`, {
+      const res = await fetch(`/api/articles/${articleId}/like`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
       });
       if (res.ok) {
@@ -89,7 +89,7 @@ const ArticleViewer: React.FC<ArticleViewerProps> = ({ articleId, onBack }) => {
     try {
       setBookmarkLoading(true);
       const token = await getAuthToken();
-      const res = await fetch(`https://patr.me/api/articles/${articleId}/bookmark`, {
+      const res = await fetch(`/api/articles/${articleId}/bookmark`, {
         method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
       });
       if (res.ok) {
@@ -105,7 +105,7 @@ const ArticleViewer: React.FC<ArticleViewerProps> = ({ articleId, onBack }) => {
     if (!window.confirm('Delete this article?')) return;
     try {
       const token = await getAuthToken();
-      const res = await fetch(`https://patr.me/api/articles/${articleId}`, {
+      const res = await fetch(`/api/articles/${articleId}`, {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
       });
       if (res.ok) { alert('Article deleted'); onBack(); }

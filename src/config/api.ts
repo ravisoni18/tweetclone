@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Replace with your backend API URL
-const API_BASE_URL = 'https://patr.me/api';
+// Relative path so this works against whatever host/IP serves the frontend
+const API_BASE_URL = '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

@@ -1,0 +1,1930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patr.me — Admin Command Center</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #080c14;
+            --bg2: #0d1321;
+            --bg3: #131c2e;
+            --panel: rgba(19, 28, 46, 0.9);
+            --border: rgba(0, 212, 255, 0.12);
+            --border-bright: rgba(0, 212, 255, 0.35);
+            --cyan: #00d4ff;
+            --cyan-dim: rgba(0, 212, 255, 0.15);
+            --cyan-glow: rgba(0, 212, 255, 0.08);
+            --green: #00ff88;
+            --amber: #ffb300;
+            --red: #ff4757;
+            --purple: #7c5cbf;
+            --text: #e0eaff;
+            --text-dim: #7a8bb0;
+            --text-faint: #3a4a6a;
+            --radius: 12px;
+            --sidebar-w: 240px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── GRID BG ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── LOGIN ── */
+        #loginOverlay {
+            position: fixed; inset: 0;
+            background: rgba(8,12,20,0.97);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9000;
+            backdrop-filter: blur(20px);
+        }
+        .login-card {
+            background: var(--bg3);
+            border: 1px solid var(--border-bright);
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            width: 380px;
+            box-shadow: 0 0 60px rgba(0,212,255,0.08), 0 20px 60px rgba(0,0,0,0.6);
+            position: relative;
+        }
+        .login-card::before {
+            content: '';
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 200px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+        }
+        .login-logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            color: var(--cyan);
+            text-shadow: 0 0 30px rgba(0,212,255,0.5);
+            margin-bottom: 0.5rem;
+        }
+        .login-subtitle {
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            margin-bottom: 2rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .access-badge {
+            background: rgba(0,212,255,0.08);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--cyan);
+            margin-bottom: 2rem;
+        }
+        .google-btn {
+            background: linear-gradient(135deg, #4285f4, #357ae8);
+            color: white; border: none;
+            padding: 0.875rem 2rem; border-radius: 50px;
+            font-size: 0.95rem; font-weight: 600;
+            cursor: pointer; width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 0.75rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(66,133,244,0.3);
+        }
+        .google-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(66,133,244,0.4); }
+        #loginError { margin-top: 1rem; color: var(--red); font-size: 0.85rem; }
+
+        /* ── LAYOUT ── */
+        #app { display: none; height: 100vh; overflow: hidden; }
+
+        .sidebar {
+            position: fixed; left: 0; top: 0; bottom: 0;
+            width: var(--sidebar-w);
+            background: var(--bg2);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            z-index: 100;
+        }
+        .sidebar-brand {
+            padding: 1.5rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .brand-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.4rem;
+            color: var(--cyan);
+            text-shadow: 0 0 20px rgba(0,212,255,0.4);
+        }
+        .brand-tag {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        .nav-section { padding: 1rem 0.75rem 0.5rem; }
+        .nav-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--text-faint);
+            padding: 0 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .nav-item {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.65rem 0.75rem; border-radius: 8px;
+            cursor: pointer; color: var(--text-dim);
+            font-size: 0.875rem; font-weight: 500;
+            transition: all 0.2s; position: relative;
+            margin-bottom: 2px;
+            border: 1px solid transparent;
+        }
+        .nav-item:hover { background: var(--cyan-glow); color: var(--text); }
+        .nav-item.active {
+            background: var(--cyan-dim);
+            color: var(--cyan);
+            border-color: var(--border-bright);
+        }
+        .nav-item i { width: 18px; text-align: center; font-size: 0.95rem; }
+        .nav-badge {
+            margin-left: auto;
+            background: var(--cyan);
+            color: var(--bg);
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 0.15rem 0.45rem;
+            border-radius: 50px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 1rem 0.75rem;
+            border-top: 1px solid var(--border);
+        }
+        .user-card {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.75rem; border-radius: 8px;
+            background: var(--cyan-glow);
+        }
+        .user-card img {
+            width: 34px; height: 34px; border-radius: 50%;
+            border: 2px solid var(--cyan);
+        }
+        .user-card-name { font-size: 0.8rem; font-weight: 600; }
+        .user-card-role {
+            font-size: 0.65rem;
+            color: var(--cyan);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .logout-btn {
+            margin-left: auto;
+            background: none; border: none;
+            color: var(--text-dim); cursor: pointer;
+            font-size: 1rem; padding: 0.25rem;
+            transition: color 0.2s;
+        }
+        .logout-btn:hover { color: var(--red); }
+
+        /* ── MAIN ── */
+        .main {
+            margin-left: var(--sidebar-w);
+            flex: 1;
+            min-width: 0;
+            width: calc(100vw - var(--sidebar-w));
+            height: 100vh;
+            overflow-y: auto;
+            padding: 1.5rem;
+            position: relative; z-index: 1;
+        }
+
+        /* ── TOPBAR ── */
+        .topbar {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+        .page-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            color: var(--text-dim);
+        }
+        .page-title span { color: var(--cyan); }
+        .topbar-actions { display: flex; align-items: center; gap: 0.75rem; }
+        .refresh-btn {
+            background: var(--cyan-dim); border: 1px solid var(--border-bright);
+            color: var(--cyan); padding: 0.5rem 1rem; border-radius: 8px;
+            cursor: pointer; font-size: 0.8rem; font-weight: 600;
+            display: flex; align-items: center; gap: 0.5rem;
+            transition: all 0.2s;
+        }
+        .refresh-btn:hover { background: var(--cyan); color: var(--bg); }
+
+        /* ── TAB SECTIONS ── */
+        .tab-section { display: none; animation: fadeIn 0.3s ease; }
+        .tab-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ── STAT CARDS ── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 1rem; margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem 1.5rem;
+            position: relative; overflow: hidden;
+            transition: border-color 0.3s;
+        }
+        .stat-card:hover { border-color: var(--border-bright); }
+        .stat-card::after {
+            content: '';
+            position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+        }
+        .stat-card.cyan::after { background: linear-gradient(90deg, transparent, var(--cyan), transparent); }
+        .stat-card.green::after { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+        .stat-card.amber::after { background: linear-gradient(90deg, transparent, var(--amber), transparent); }
+        .stat-card.red::after { background: linear-gradient(90deg, transparent, var(--red), transparent); }
+        .stat-card.purple::after { background: linear-gradient(90deg, transparent, var(--purple), transparent); }
+        .stat-icon {
+            font-size: 1.5rem; margin-bottom: 0.75rem;
+            opacity: 0.7;
+        }
+        .stat-card.cyan .stat-icon { color: var(--cyan); }
+        .stat-card.green .stat-icon { color: var(--green); }
+        .stat-card.amber .stat-icon { color: var(--amber); }
+        .stat-card.red .stat-icon { color: var(--red); }
+        .stat-card.purple .stat-icon { color: var(--purple); }
+        .stat-label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem; font-weight: 700;
+            line-height: 1; margin: 0.25rem 0 0.5rem;
+        }
+        .stat-sub { font-size: 0.75rem; color: var(--text-faint); }
+
+        /* ── CHARTS ROW ── */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem; margin-bottom: 1.5rem;
+        }
+        .chart-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+        }
+        .chart-title {
+            font-size: 0.8rem;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            color: var(--text-dim); margin-bottom: 1rem;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .chart-title::before {
+            content: ''; width: 6px; height: 6px;
+            border-radius: 50%; background: var(--cyan);
+        }
+        .chart-wrap { height: 180px; position: relative; }
+
+        /* ── PANEL ── */
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        .panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(0,212,255,0.03);
+        }
+        .panel-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .panel-title i { color: var(--cyan); }
+        .search-input {
+            background: var(--bg3); border: 1px solid var(--border);
+            color: var(--text); padding: 0.5rem 0.85rem;
+            border-radius: 8px; font-size: 0.8rem;
+            width: 220px; transition: border-color 0.2s;
+        }
+        .search-input:focus { outline: none; border-color: var(--cyan); }
+        .search-input::placeholder { color: var(--text-faint); }
+
+        /* ── TABLE ── */
+        table { width: 100%; border-collapse: collapse; }
+        thead { background: rgba(0,212,255,0.04); }
+        th {
+            padding: 0.75rem 1rem;
+            text-align: left; font-size: 0.7rem;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            color: var(--text-dim); font-weight: 600;
+            border-bottom: 1px solid var(--border);
+        }
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(0,212,255,0.04);
+            font-size: 0.85rem; vertical-align: middle;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--cyan-glow); }
+
+        .avatar-sm {
+            width: 32px; height: 32px; border-radius: 50%;
+            border: 1.5px solid var(--border-bright);
+            object-fit: cover; vertical-align: middle;
+        }
+        .user-cell { display: flex; align-items: center; gap: 0.6rem; }
+        .user-cell-name { font-weight: 600; }
+        .user-cell-email { font-size: 0.75rem; color: var(--text-dim); }
+
+        .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+        .text-cyan { color: var(--cyan); }
+        .text-green { color: var(--green); }
+        .text-amber { color: var(--amber); }
+        .text-red { color: var(--red); }
+        .text-dim { color: var(--text-dim); }
+
+        .tag {
+            display: inline-block; padding: 0.2rem 0.6rem;
+            border-radius: 50px; font-size: 0.7rem; font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .tag-cyan { background: rgba(0,212,255,0.15); color: var(--cyan); }
+        .tag-green { background: rgba(0,255,136,0.12); color: var(--green); }
+        .tag-amber { background: rgba(255,179,0,0.15); color: var(--amber); }
+        .tag-red { background: rgba(255,71,87,0.15); color: var(--red); }
+
+        /* ── BUTTONS ── */
+        .btn { 
+            padding: 0.4rem 0.85rem; border: none; border-radius: 6px;
+            cursor: pointer; font-size: 0.78rem; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+        }
+        .btn-del { background: rgba(255,71,87,0.15); color: var(--red); border: 1px solid rgba(255,71,87,0.3); }
+        .btn-del:hover { background: var(--red); color: white; }
+        .btn-flag { background: rgba(255,179,0,0.12); color: var(--amber); border: 1px solid rgba(255,179,0,0.3); }
+        .btn-flag:hover { background: var(--amber); color: var(--bg); }
+        .btn-view { background: rgba(0,212,255,0.12); color: var(--cyan); border: 1px solid var(--border); }
+        .btn-view:hover { background: var(--cyan); color: var(--bg); }
+        .btn-ban { background: rgba(124,92,191,0.15); color: var(--purple); border: 1px solid rgba(124,92,191,0.3); }
+        .btn-ban:hover { background: var(--purple); color: white; }
+        .btn-primary {
+            background: var(--cyan); color: var(--bg);
+            border: none; padding: 0.6rem 1.25rem; border-radius: 8px;
+            font-weight: 700; cursor: pointer; font-size: 0.85rem;
+        }
+        .btn-primary:hover { opacity: 0.88; }
+        .btn-ghost { background: transparent; color: var(--text-dim); border: 1px solid var(--border); padding: 0.6rem 1.25rem; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+
+        /* ── INVITE FILTER BUTTONS ── */
+        .inv-filter-btn { transition: all 0.2s; }
+        .inv-filter-btn.active { background: var(--cyan); color: var(--bg); border-color: var(--cyan); }
+        .btn-approve { background: rgba(0,255,136,0.12); color: var(--green); border: 1px solid rgba(0,255,136,0.3); }
+        .btn-approve:hover { background: var(--green); color: var(--bg); }
+        .btn-reject  { background: rgba(255,71,87,0.15); color: var(--red);   border: 1px solid rgba(255,71,87,0.3); }
+        .btn-reject:hover  { background: var(--red);   color: white; }
+
+        /* ── MEDIA GRID ── */
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem; padding: 1.25rem;
+        }
+        .media-item {
+            border-radius: 10px;
+            overflow: hidden; position: relative;
+            border: 1px solid var(--border);
+            background: var(--bg3);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .media-item:hover { border-color: var(--cyan); transform: translateY(-2px); }
+        .media-thumb {
+            width: 100%; aspect-ratio: 4/3;
+            object-fit: cover; display: block;
+        }
+        .media-thumb-vid {
+            width: 100%; aspect-ratio: 4/3;
+            object-fit: cover; display: block;
+        }
+        .media-overlay {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(transparent, rgba(8,12,20,0.95));
+            padding: 1.5rem 0.75rem 0.75rem;
+        }
+        .media-author { font-size: 0.75rem; color: var(--text-dim); }
+        .media-date { font-size: 0.65rem; color: var(--text-faint); }
+        .media-type-badge {
+            position: absolute; top: 0.5rem; left: 0.5rem;
+            background: rgba(8,12,20,0.8);
+            border: 1px solid var(--border-bright);
+            border-radius: 4px; padding: 0.2rem 0.5rem;
+            font-size: 0.65rem; font-family: 'JetBrains Mono', monospace;
+            color: var(--cyan);
+        }
+        .media-del-btn {
+            position: absolute; top: 0.5rem; right: 0.5rem;
+            background: rgba(255,71,87,0.8);
+            border: none; color: white;
+            width: 26px; height: 26px; border-radius: 50%;
+            cursor: pointer; font-size: 0.75rem;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .media-item:hover .media-del-btn { opacity: 1; }
+        .video-play {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none;
+        }
+        .video-play i { font-size: 2rem; color: white; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+
+        /* ── MODAL ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(8,12,20,0.9);
+            backdrop-filter: blur(8px);
+            z-index: 5000;
+            align-items: center; justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: var(--bg2);
+            border: 1px solid var(--border-bright);
+            border-radius: 16px;
+            width: 90%; max-width: 700px;
+            max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 0 80px rgba(0,212,255,0.1);
+        }
+        .modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; background: var(--bg2); z-index: 1;
+        }
+        .modal-header h3 {
+            font-size: 1rem;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .modal-close {
+            background: none; border: none; color: var(--text-dim);
+            cursor: pointer; font-size: 1.1rem;
+            transition: color 0.2s;
+        }
+        .modal-close:hover { color: var(--red); }
+        .modal-body { padding: 1.5rem; }
+
+        .post-detail-img {
+            width: 100%; border-radius: 10px;
+            max-height: 360px; object-fit: cover;
+            border: 1px solid var(--border); margin-bottom: 1rem;
+        }
+        .post-detail-video {
+            width: 100%; border-radius: 10px;
+            max-height: 360px;
+            border: 1px solid var(--border); margin-bottom: 1rem;
+        }
+        .post-detail-content {
+            font-size: 1rem; line-height: 1.6;
+            padding: 1rem; background: var(--bg3);
+            border-radius: 10px; border: 1px solid var(--border);
+            margin-bottom: 1rem;
+        }
+        .meta-row {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem; margin-bottom: 1rem;
+        }
+        .meta-box {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 8px; padding: 0.75rem;
+            text-align: center;
+        }
+        .meta-box-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; }
+        .meta-box-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.4rem; font-weight: 700;
+            color: var(--cyan);
+        }
+        .comments-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .comment-item {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 8px; padding: 0.75rem;
+            display: flex; justify-content: space-between; align-items: flex-start;
+        }
+        .comment-text { font-size: 0.85rem; line-height: 1.5; }
+        .comment-author { font-size: 0.7rem; color: var(--text-dim); margin-top: 0.25rem; }
+
+        /* ── FLAG MODAL ── */
+        .flag-modal-box { max-width: 480px; }
+        .flag-textarea {
+            width: 100%; min-height: 100px;
+            background: var(--bg3); border: 1px solid var(--border);
+            color: var(--text); border-radius: 8px;
+            padding: 0.75rem; font-family: 'DM Sans', sans-serif;
+            font-size: 0.875rem; resize: vertical;
+            margin: 0.75rem 0;
+        }
+        .flag-textarea:focus { outline: none; border-color: var(--cyan); }
+
+        /* ── CONFIRM MODAL ── */
+        .confirm-modal-box { max-width: 400px; }
+        .confirm-icon { font-size: 2.5rem; color: var(--red); margin-bottom: 0.5rem; }
+        .confirm-msg { color: var(--text-dim); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem; }
+        .confirm-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+
+        /* ── CONFIG ── */
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .config-panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+        }
+        .config-panel-title {
+            font-size: 0.8rem; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--cyan);
+            margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+        }
+        .config-field { margin-bottom: 0.85rem; }
+        .config-label { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.35rem; }
+        .config-input {
+            width: 100%; background: var(--bg3);
+            border: 1px solid var(--border);
+            color: var(--text); padding: 0.55rem 0.85rem;
+            border-radius: 7px; font-size: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+            transition: border-color 0.2s;
+        }
+        .config-input:focus { outline: none; border-color: var(--cyan); }
+        .config-save-row { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem; }
+
+        /* ── TOAST ── */
+        .toast-container {
+            position: fixed; top: 1.5rem; right: 1.5rem;
+            display: flex; flex-direction: column; gap: 0.5rem;
+            z-index: 9999;
+        }
+        .toast {
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px; font-size: 0.85rem; font-weight: 500;
+            display: flex; align-items: center; gap: 0.6rem;
+            animation: slideIn 0.3s ease;
+            border: 1px solid transparent;
+        }
+        @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+        .toast.success { background: rgba(0,255,136,0.12); border-color: rgba(0,255,136,0.3); color: var(--green); }
+        .toast.error { background: rgba(255,71,87,0.12); border-color: rgba(255,71,87,0.3); color: var(--red); }
+        .toast.info { background: rgba(0,212,255,0.12); border-color: rgba(0,212,255,0.3); color: var(--cyan); }
+
+        /* ── LOADING ── */
+        .skeleton { background: linear-gradient(90deg, var(--bg3) 25%, var(--bg2) 50%, var(--bg3) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+        /* ── RATINGS STARS ── */
+        .stars { color: var(--amber); font-size: 0.75rem; }
+
+        /* ── EMPTY STATE ── */
+        .empty-state { padding: 3rem; text-align: center; color: var(--text-faint); }
+        .empty-state i { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+
+        /* ── USER POST CARD ── */
+        .user-post-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            transition: border-color 0.2s, transform 0.2s;
+            cursor: pointer;
+        }
+        .user-post-card:hover { border-color: var(--cyan); transform: translateY(-2px); }
+        .user-post-card-media {
+            width: 100%; aspect-ratio: 16/9;
+            object-fit: cover; display: block;
+            background: var(--bg2);
+        }
+        .user-post-card-media-placeholder {
+            width: 100%; aspect-ratio: 16/9;
+            background: var(--bg2);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-faint); font-size: 2rem;
+        }
+        .user-post-card-body { padding: 0.85rem; }
+        .user-post-card-text { font-size: 0.85rem; line-height: 1.5; margin-bottom: 0.5rem; color: var(--text); }
+        .user-post-card-meta { display: flex; align-items: center; justify-content: space-between; }
+        .user-post-card-rating { font-size: 0.8rem; color: var(--amber); }
+        .user-post-card-date { font-size: 0.75rem; color: var(--text-faint); }
+        .user-post-card-actions { display: flex; gap: 0.35rem; margin-top: 0.65rem; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 900px) {
+            .charts-row { grid-template-columns: 1fr; }
+            .config-grid { grid-template-columns: 1fr; }
+            .meta-row { grid-template-columns: 1fr 1fr; }
+        }
+        
+        
+        
+        .media-actions {
+    position: absolute; top: 0.5rem; right: 0.5rem;
+    display: flex; gap: 0.35rem;
+    opacity: 0; transition: opacity 0.2s;
+}
+.media-item:hover .media-actions { opacity: 1; }
+.media-flag-btn {
+    background: rgba(255,179,0,0.85);
+    border: none; color: white;
+    width: 26px; height: 26px; border-radius: 50%;
+    cursor: pointer; font-size: 0.75rem;
+    display: flex; align-items: center; justify-content: center;
+}
+.media-flag-btn:hover { background: var(--amber); }
+/* Remove old standalone del btn positioning since it's now inside .media-actions */
+.media-del-btn {
+    position: static;
+    background: rgba(255,71,87,0.85);
+    border: none; color: white;
+    width: 26px; height: 26px; border-radius: 50%;
+    cursor: pointer; font-size: 0.75rem;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 1;
+}
+.media-del-btn:hover { background: var(--red); }
+    </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginOverlay">
+    <div class="login-card">
+        <div class="login-logo">patr.me</div>
+        <div class="login-subtitle">Admin Command Center</div>
+        <div class="access-badge">
+            <i class="fas fa-shield-halved"></i>
+            Restricted Access: ravisoni18@gmail.com
+        </div>
+        <button id="loginBtn" class="google-btn">
+            <i class="fab fa-google"></i> Sign in with Google
+        </button>
+        <div id="loginError"></div>
+    </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- APP -->
+<div id="app" style="display:flex; width:100%; min-height:100vh;">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-name">patr.me</div>
+            <div class="brand-tag">Admin Console</div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">Overview</div>
+            <div class="nav-item active" data-tab="overview" onclick="switchTab('overview', this)">
+                <i class="fas fa-chart-line"></i> Dashboard
+            </div>
+            <div class="nav-item" data-tab="analytics" onclick="switchTab('analytics', this)">
+                <i class="fas fa-chart-bar"></i> Analytics
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">Content</div>
+            <div class="nav-item" data-tab="posts" onclick="switchTab('posts', this)">
+                <i class="fas fa-newspaper"></i> Posts
+                <span class="nav-badge" id="badge-posts">—</span>
+            </div>
+            <div class="nav-item" data-tab="media" onclick="switchTab('media', this)">
+                <i class="fas fa-photo-film"></i> Media
+                <span class="nav-badge" id="badge-media">—</span>
+            </div>
+            <div class="nav-item" data-tab="comments" onclick="switchTab('comments', this)">
+                <i class="fas fa-comments"></i> Comments
+                <span class="nav-badge" id="badge-comments">—</span>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">Users</div>
+            <div class="nav-item" data-tab="users" onclick="switchTab('users', this)">
+                <i class="fas fa-users"></i> All Users
+                <span class="nav-badge" id="badge-users">—</span>
+            </div>
+            <div class="nav-item" data-tab="invitations" onclick="switchTab('invitations', this)">
+                <i class="fas fa-envelope-open-text"></i> Invitations
+                <span class="nav-badge" id="badge-invitations" style="background:var(--amber);color:var(--bg);">—</span>
+            </div>
+        </div>
+
+        <div class="nav-section">
+            <div class="nav-label">System</div>
+            <div class="nav-item" data-tab="config" onclick="switchTab('config', this)">
+                <i class="fas fa-sliders"></i> Configuration
+            </div>
+        </div>
+
+        <div class="sidebar-footer">
+            <div class="user-card">
+                <img id="sidebarAvatar" src="" alt="Admin">
+                <div>
+                    <div class="user-card-name" id="sidebarName">Admin</div>
+                    <div class="user-card-role">SUPER ADMIN</div>
+                </div>
+                <button class="logout-btn" onclick="signOut()" title="Sign out">
+                    <i class="fas fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+        <div class="topbar">
+            <div class="page-title"><span>//</span> <span id="pageTitle">Dashboard</span></div>
+            <div class="topbar-actions">
+                <span style="font-size:0.75rem; color:var(--text-faint);">Last updated: <span id="lastUpdated">—</span></span>
+                <button class="refresh-btn" onclick="loadAll()">
+                    <i class="fas fa-rotate-right"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        <!-- ── OVERVIEW TAB ── -->
+        <div id="tab-overview" class="tab-section active">
+            <div class="stats-row">
+                <div class="stat-card cyan">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-label">Total Users</div>
+                    <div class="stat-value text-cyan" id="stat-users">—</div>
+                    <div class="stat-sub">Registered accounts</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-icon"><i class="fas fa-newspaper"></i></div>
+                    <div class="stat-label">Total Posts</div>
+                    <div class="stat-value text-green" id="stat-posts">—</div>
+                    <div class="stat-sub">All-time content</div>
+                </div>
+                <div class="stat-card amber">
+                    <div class="stat-icon"><i class="fas fa-comments"></i></div>
+                    <div class="stat-label">Comments</div>
+                    <div class="stat-value text-amber" id="stat-comments">—</div>
+                    <div class="stat-sub">Engagement replies</div>
+                </div>
+                <div class="stat-card purple">
+                    <div class="stat-icon"><i class="fas fa-photo-film"></i></div>
+                    <div class="stat-label">Media Files</div>
+                    <div class="stat-value" style="color:var(--purple);" id="stat-media">—</div>
+                    <div class="stat-sub">Images &amp; videos</div>
+                </div>
+                <div class="stat-card amber">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-label">Avg Rating</div>
+                    <div class="stat-value text-amber" id="stat-rating">—</div>
+                    <div class="stat-sub">Platform average</div>
+                </div>
+                <div class="stat-card amber" style="cursor:pointer;" onclick="switchTab('invitations', document.querySelector('[data-tab=invitations]'))">
+                    <div class="stat-icon"><i class="fas fa-envelope-open-text"></i></div>
+                    <div class="stat-label">Pending Invites</div>
+                    <div class="stat-value text-amber" id="stat-invitations">—</div>
+                    <div class="stat-sub">Awaiting review</div>
+                </div>
+            </div>
+
+            <div class="charts-row">
+                <div class="chart-card">
+                    <div class="chart-title">Posts Over Time</div>
+                    <div class="chart-wrap"><canvas id="chartPosts"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">Content Breakdown</div>
+                    <div class="chart-wrap"><canvas id="chartBreakdown"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Recent Posts Quick View -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title"><i class="fas fa-clock"></i> Recent Activity</div>
+                    <button class="btn btn-view" onclick="switchTab('posts', document.querySelector('[data-tab=posts]'))">View All Posts</button>
+                </div>
+                <table>
+                    <thead><tr><th>Post</th><th>Author</th><th>Rating</th><th>Media</th><th>Date</th><th>Actions</th></tr></thead>
+                    <tbody id="recentPostsBody">
+                        <tr><td colspan="6" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── ANALYTICS TAB ── -->
+        <div id="tab-analytics" class="tab-section">
+            <div class="charts-row" style="margin-bottom:1rem;">
+                <div class="chart-card">
+                    <div class="chart-title">Top Rated Posts</div>
+                    <div class="chart-wrap"><canvas id="chartTopPosts"></canvas></div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">User Engagement</div>
+                    <div class="chart-wrap"><canvas id="chartEngagement"></canvas></div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title"><i class="fas fa-trophy"></i> Top Contributors</div>
+                </div>
+                <table>
+                    <thead><tr><th>#</th><th>User</th><th>Posts</th><th>Avg Rating</th><th>Joined</th></tr></thead>
+                    <tbody id="topContributorsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── POSTS TAB ── -->
+        <div id="tab-posts" class="tab-section">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title"><i class="fas fa-newspaper"></i> All Posts</div>
+                    <input type="text" class="search-input" id="postSearch" placeholder="Search posts..." oninput="filterPosts()">
+                </div>
+                <table>
+                    <thead><tr><th>ID</th><th>Content</th><th>Author</th><th>Rating</th><th>Media</th><th>Date</th><th>Actions</th></tr></thead>
+                    <tbody id="postsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── MEDIA TAB ── -->
+        <div id="tab-media" class="tab-section">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title"><i class="fas fa-photo-film"></i> Media Gallery</div>
+                    <div style="display:flex;gap:0.5rem;">
+                        <button class="btn btn-view" onclick="filterMedia('all')" id="mfAll">All</button>
+                        <button class="btn btn-view" onclick="filterMedia('image')" id="mfImg">Images</button>
+                        <button class="btn btn-view" onclick="filterMedia('video')" id="mfVid">Videos</button>
+                    </div>
+                </div>
+                <div class="media-grid" id="mediaGrid">
+                    <div style="padding:2rem; color:var(--text-faint);">Loading media...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── COMMENTS TAB ── -->
+        <div id="tab-comments" class="tab-section">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title"><i class="fas fa-comments"></i> All Comments</div>
+                    <input type="text" class="search-input" id="commentSearch" placeholder="Search comments..." oninput="filterComments()">
+                </div>
+                <table>
+                    <thead><tr><th>Comment</th><th>Author</th><th>Post ID</th><th>Date</th><th>Actions</th></tr></thead>
+                    <tbody id="commentsBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── USERS TAB ── -->
+        <div id="tab-users" class="tab-section">
+            <!-- User list panel -->
+            <div class="panel" id="usersListPanel">
+                <div class="panel-header">
+                    <div class="panel-title"><i class="fas fa-users"></i> All Users</div>
+                    <input type="text" class="search-input" id="userSearch" placeholder="Search users..." oninput="filterUsers()">
+                </div>
+                <table>
+                    <thead><tr><th>User</th><th>Email</th><th>Posts</th><th>Joined</th><th>Actions</th></tr></thead>
+                    <tbody id="usersBody"></tbody>
+                </table>
+            </div>
+            <!-- User posts drill-down panel (hidden by default) -->
+            <div class="panel" id="userPostsPanel" style="display:none;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <button class="btn btn-view" onclick="hideUserPosts()" style="margin-right:0.5rem;"><i class="fas fa-arrow-left"></i></button>
+                        <i class="fas fa-newspaper"></i> Posts by <span id="userPostsName" style="color:var(--cyan);margin-left:0.3rem;"></span>
+                    </div>
+                    <span id="userPostsCount" class="tag tag-cyan"></span>
+                </div>
+                <div id="userPostsGrid" style="padding:1.25rem; display:grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap:1rem;"></div>
+            </div>
+        </div>
+
+        <!-- ── INVITATIONS TAB ── -->
+        <div id="tab-invitations" class="tab-section">
+            <!-- Filter bar -->
+            <div style="display:flex;gap:0.5rem;margin-bottom:1rem;align-items:center;">
+                <button class="btn btn-view inv-filter-btn active" id="invFilter-pending"  onclick="setInvFilter('pending')">
+                    <i class="fas fa-clock"></i> Pending
+                    <span id="invCount-pending"  class="nav-badge" style="background:var(--amber);color:var(--bg);">0</span>
+                </button>
+                <button class="btn btn-view inv-filter-btn" id="invFilter-approved" onclick="setInvFilter('approved')">
+                    <i class="fas fa-check-circle"></i> Approved
+                    <span id="invCount-approved" class="nav-badge">0</span>
+                </button>
+                <button class="btn btn-view inv-filter-btn" id="invFilter-rejected" onclick="setInvFilter('rejected')">
+                    <i class="fas fa-ban"></i> Rejected
+                    <span id="invCount-rejected" class="nav-badge">0</span>
+                </button>
+                <button class="btn btn-view inv-filter-btn" id="invFilter-all"      onclick="setInvFilter('all')">
+                    <i class="fas fa-list"></i> All
+                </button>
+                <input type="text" class="search-input" id="invSearch" placeholder="Search by name or email…" oninput="renderInvitations()" style="margin-left:auto;">
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title"><i class="fas fa-envelope-open-text"></i> Invitation Requests</div>
+                    <button class="refresh-btn" onclick="loadInvitations()"><i class="fas fa-rotate-right"></i> Refresh</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Requested</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invitationsBody">
+                        <tr><td colspan="5" class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── CONFIG TAB ── -->
+        <div id="tab-config" class="tab-section">
+            <div class="config-grid">
+                <div class="config-panel">
+                    <div class="config-panel-title"><i class="fab fa-google"></i> Firebase Config</div>
+                    <div class="config-field">
+                        <div class="config-label">API Key</div>
+                        <input type="text" class="config-input" id="cfg-apiKey" placeholder="AIzaSy...">
+                    </div>
+                    <div class="config-field">
+                        <div class="config-label">Auth Domain</div>
+                        <input type="text" class="config-input" id="cfg-authDomain" placeholder="project.firebaseapp.com">
+                    </div>
+                    <div class="config-field">
+                        <div class="config-label">Project ID</div>
+                        <input type="text" class="config-input" id="cfg-projectId" placeholder="project-id">
+                    </div>
+                    <div class="config-field">
+                        <div class="config-label">Storage Bucket</div>
+                        <input type="text" class="config-input" id="cfg-storageBucket" placeholder="project.appspot.com">
+                    </div>
+                    <div class="config-field">
+                        <div class="config-label">Messaging Sender ID</div>
+                        <input type="text" class="config-input" id="cfg-messagingSenderId" placeholder="000000000000">
+                    </div>
+                    <div class="config-field">
+                        <div class="config-label">App ID</div>
+                        <input type="text" class="config-input" id="cfg-appId" placeholder="1:000...">
+                    </div>
+                    <div class="config-save-row">
+                        <button class="btn-ghost" onclick="loadConfig()">Reset</button>
+                        <button class="btn-primary" onclick="saveConfig('firebase')"><i class="fas fa-floppy-disk"></i> Save Firebase Config</button>
+                    </div>
+                </div>
+
+                <div class="config-panel">
+                    <div class="config-panel-title"><i class="fas fa-server"></i> API & Endpoints</div>
+                    <div class="config-field">
+                        <div class="config-label">Admin API Base URL</div>
+                        <input type="text" class="config-input" id="cfg-adminApi" placeholder="https://patr.me/api/admin.php">
+                    </div>
+                    <div class="config-field">
+                        <div class="config-label">Public API Base URL</div>
+                        <input type="text" class="config-input" id="cfg-publicApi" placeholder="https://patr.me/api/index.php">
+                    </div>
+                    <div class="config-field">
+                        <div class="config-label">Media Storage URL</div>
+                        <input type="text" class="config-input" id="cfg-mediaUrl" placeholder="https://patr.me/uploads/">
+                    </div>
+                    <div class="config-field">
+                        <div class="config-label">Admin Email</div>
+                        <input type="text" class="config-input" id="cfg-adminEmail" placeholder="admin@patr.me">
+                    </div>
+                    <div class="config-field">
+                        <div class="config-label">Authorized Admin Google Email</div>
+                        <input type="text" class="config-input" id="cfg-adminGoogle" placeholder="you@gmail.com">
+                    </div>
+                    <div class="config-save-row">
+                        <button class="btn-ghost" onclick="loadConfig()">Reset</button>
+                        <button class="btn-primary" onclick="saveConfig('api')"><i class="fas fa-floppy-disk"></i> Save API Config</button>
+                    </div>
+                </div>
+
+                <div class="config-panel" style="grid-column: 1/-1;">
+                    <div class="config-panel-title"><i class="fas fa-code"></i> Generated Config Preview</div>
+                    <pre style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:1rem;font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--text-dim);overflow-x:auto;white-space:pre-wrap;" id="configPreview">Click "Save Config" to generate...</pre>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- POST DETAIL MODAL -->
+<div class="modal-overlay" id="postDetailModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-newspaper" style="color:var(--cyan);"></i> Post Details</h3>
+            <button class="modal-close" onclick="closeModal('postDetailModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body" id="postDetailBody">Loading...</div>
+    </div>
+</div>
+
+<!-- FLAG MODAL -->
+<div class="modal-overlay" id="flagModal">
+    <div class="modal-box flag-modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-flag" style="color:var(--amber);"></i> Flag & Notify User</h3>
+            <button class="modal-close" onclick="closeModal('flagModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <p style="color:var(--text-dim); font-size:0.875rem;">An email notification will be sent to the post author from <span class="mono text-cyan">admin@patr.me</span>.</p>
+            <input type="hidden" id="flagPostId">
+            <textarea class="flag-textarea" id="flagReason" placeholder="Explain the reason for flagging (e.g. This content violates community guidelines...)"></textarea>
+            <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+                <button class="btn-ghost" onclick="closeModal('flagModal')">Cancel</button>
+                <button class="btn-primary" onclick="submitFlag()"><i class="fas fa-paper-plane"></i> Send Notification</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal-box confirm-modal-box">
+        <div class="modal-body" style="text-align:center; padding:2rem;">
+            <div class="confirm-icon"><i class="fas fa-triangle-exclamation"></i></div>
+            <h3 id="confirmTitle" style="margin-bottom:0.5rem;">Confirm Action</h3>
+            <p class="confirm-msg" id="confirmMsg">Are you sure?</p>
+            <div class="confirm-actions">
+                <button class="btn-ghost" onclick="closeModal('confirmModal')">Cancel</button>
+                <button class="btn btn-del" id="confirmOkBtn"><i class="fas fa-trash"></i> Confirm Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── CONFIG MANAGEMENT ──
+const DEFAULT_CONFIG = {
+    firebase: {
+        apiKey: "AIzaSyBGGPT6EW0aSR2PoW8WuGouJt8VcoI4BDQ",
+        authDomain: "patr-4829d.firebaseapp.com",
+        projectId: "patr-4829d",
+        storageBucket: "patr-4829d.firebasestorage.app",
+        messagingSenderId: "964264491610",
+        appId: "1:964264491610:web:ccd38cb9d1f00e91a4f663"
+    },
+    api: {
+        adminApi: "https://patr.me/admin/admin.php",
+        publicApi: "https://patr.me/admin/index.php",
+        mediaUrl: "https://patr.me/uploads/",
+        adminEmail: "admin@patr.me",
+        adminGoogle: "ravisoni18@gmail.com"
+    }
+};
+
+function getConfig() {
+    try {
+        const saved = localStorage.getItem('patr_admin_config');
+        return saved ? JSON.parse(saved) : DEFAULT_CONFIG;
+    } catch { return DEFAULT_CONFIG; }
+}
+
+function loadConfig() {
+    const cfg = getConfig();
+    // Firebase fields
+    document.getElementById('cfg-apiKey').value = cfg.firebase?.apiKey || '';
+    document.getElementById('cfg-authDomain').value = cfg.firebase?.authDomain || '';
+    document.getElementById('cfg-projectId').value = cfg.firebase?.projectId || '';
+    document.getElementById('cfg-storageBucket').value = cfg.firebase?.storageBucket || '';
+    document.getElementById('cfg-messagingSenderId').value = cfg.firebase?.messagingSenderId || '';
+    document.getElementById('cfg-appId').value = cfg.firebase?.appId || '';
+    // API fields
+    document.getElementById('cfg-adminApi').value = cfg.api?.adminApi || '';
+    document.getElementById('cfg-publicApi').value = cfg.api?.publicApi || '';
+    document.getElementById('cfg-mediaUrl').value = cfg.api?.mediaUrl || '';
+    document.getElementById('cfg-adminEmail').value = cfg.api?.adminEmail || '';
+    document.getElementById('cfg-adminGoogle').value = cfg.api?.adminGoogle || '';
+}
+
+function saveConfig(section) {
+    const cfg = getConfig();
+    if (section === 'firebase') {
+        cfg.firebase = {
+            apiKey: document.getElementById('cfg-apiKey').value,
+            authDomain: document.getElementById('cfg-authDomain').value,
+            projectId: document.getElementById('cfg-projectId').value,
+            storageBucket: document.getElementById('cfg-storageBucket').value,
+            messagingSenderId: document.getElementById('cfg-messagingSenderId').value,
+            appId: document.getElementById('cfg-appId').value
+        };
+    } else {
+        cfg.api = {
+            adminApi: document.getElementById('cfg-adminApi').value,
+            publicApi: document.getElementById('cfg-publicApi').value,
+            mediaUrl: document.getElementById('cfg-mediaUrl').value,
+            adminEmail: document.getElementById('cfg-adminEmail').value,
+            adminGoogle: document.getElementById('cfg-adminGoogle').value
+        };
+    }
+    localStorage.setItem('patr_admin_config', JSON.stringify(cfg));
+    updateConfigPreview(cfg);
+    toast('Configuration saved! Reload to apply changes.', 'success');
+}
+
+function updateConfigPreview(cfg) {
+    const preview = `const firebaseConfig = ${JSON.stringify(cfg.firebase, null, 2)};
+
+const ADMIN_API = "${cfg.api?.adminApi}";
+const PUBLIC_API = "${cfg.api?.publicApi}";
+const MEDIA_URL = "${cfg.api?.mediaUrl}";
+const ADMIN_EMAIL = "${cfg.api?.adminEmail}";
+const ADMIN_GOOGLE = "${cfg.api?.adminGoogle}";`;
+    document.getElementById('configPreview').textContent = preview;
+}
+
+// ── FIREBASE INIT ──
+let auth, currentUser;
+const cfg = getConfig();
+try {
+    firebase.initializeApp(cfg.firebase);
+    auth = firebase.auth();
+} catch(e) { console.error('Firebase init error', e); }
+
+// ── API HELPERS ──
+const API_BASE = () => getConfig().api?.adminApi || 'https://patr.me/api/admin.php';
+
+async function apiRequest(endpoint, opts = {}) {
+    if (!currentUser) throw new Error('Not authenticated');
+    const params = { userId: currentUser.uid, userEmail: currentUser.email, admin_override: 1 };
+    const method = opts.method || 'GET';
+    let url = `${API_BASE()}/${endpoint}`;
+    const fetchOpts = { method, headers: { 'Content-Type': 'application/json' }, ...opts };
+    if (method === 'GET') {
+        url += '?' + new URLSearchParams(params);
+    } else {
+        const body = fetchOpts.body ? JSON.parse(fetchOpts.body) : {};
+        fetchOpts.body = JSON.stringify({ ...params, ...body });
+    }
+    return fetch(url, fetchOpts);
+}
+
+// ── STATE ──
+let data = { users: [], posts: [], comments: [], stats: {} };
+let allMedia = [];
+let mediaFilter = 'all';
+let allInvitations = [];
+let invFilter = 'pending';
+
+// ── AUTH ──
+auth.onAuthStateChanged(user => {
+    const adminEmail = getConfig().api?.adminGoogle || DEFAULT_CONFIG.api.adminGoogle;
+    if (user && user.email === adminEmail) {
+        currentUser = user;
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        document.getElementById('app').style.width = '100%';
+        document.getElementById('sidebarAvatar').src = user.photoURL || '';
+        document.getElementById('sidebarName').textContent = user.displayName?.split(' ')[0] || 'Admin';
+        loadAll();
+        loadConfig();
+    } else {
+        if (user) { auth.signOut(); toast('Access denied. Not an admin.', 'error'); }
+        document.getElementById('loginOverlay').style.display = 'flex';
+        document.getElementById('app').style.display = 'none';
+    }
+});
+
+document.getElementById('loginBtn').onclick = async () => {
+    try {
+        document.getElementById('loginError').textContent = '';
+        await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    } catch(e) {
+        // COOP warnings about window.closed are non-fatal — only show real errors
+        if (e.code && e.code !== 'auth/cancelled-popup-request') {
+            document.getElementById('loginError').textContent = e.message;
+        }
+    }
+};
+function signOut() { auth.signOut(); }
+
+// ── LOAD DATA ──
+async function loadAll() {
+    document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+    await Promise.all([loadStats(), loadUsers(), loadPosts(), loadComments(), loadInvitations()]);
+}
+
+async function loadStats() {
+    try {
+        const res = await apiRequest('stats');
+        if (res.ok) {
+            const s = await res.json();
+            const tu = s.users?.total_users || 0;
+            const tp = s.posts?.total_posts || 0;
+            const tc = s.comments?.total_comments || 0;
+            const tr = parseFloat(s.ratings?.average_rating || 0).toFixed(1);
+            document.getElementById('stat-users').textContent = tu;
+            document.getElementById('stat-posts').textContent = tp;
+            document.getElementById('stat-comments').textContent = tc;
+            document.getElementById('stat-rating').textContent = tr + '★';
+            document.getElementById('badge-users').textContent = tu;
+            document.getElementById('badge-posts').textContent = tp;
+            document.getElementById('badge-comments').textContent = tc;
+            data.stats = s;
+        }
+    } catch(e) { console.error('Stats error', e); }
+}
+
+async function loadUsers() {
+    try {
+        const res = await apiRequest('users');
+        if (res.ok) {
+            data.users = await res.json();
+            renderUsers(data.users);
+            renderTopContributors();
+        }
+    } catch(e) { console.error('Users error', e); }
+}
+
+async function loadPosts() {
+    try {
+        const res = await apiRequest('posts');
+        if (res.ok) {
+            const d = await res.json();
+            data.posts = d.posts || d || [];
+            // Debug: log first post structure to console so you can see field names
+            if (data.posts.length > 0) {
+                console.log('[patr admin] First post fields:', Object.keys(data.posts[0]));
+                console.log('[patr admin] First post sample:', data.posts[0]);
+            }
+            renderPosts(data.posts);
+            renderRecentPosts();
+            buildMediaGallery();
+            renderCharts();
+        }
+    } catch(e) { console.error('Posts error', e); }
+}
+
+async function loadComments() {
+    try {
+        const res = await apiRequest('comments');
+        if (res.ok) {
+            data.comments = await res.json();
+            renderComments(data.comments);
+            document.getElementById('badge-comments').textContent = data.comments.length;
+        }
+    } catch(e) { console.error('Comments error', e); }
+}
+
+// ── RENDER USERS ──
+function renderUsers(users) {
+    const tbody = document.getElementById('usersBody');
+    if (!users.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-user-slash"></i> No users found</td></tr>'; return; }
+    tbody.innerHTML = users.map((u, i) => {
+        // Count posts for this user from loaded data
+        const userPostCount = data.posts.filter(p => {
+            const pid = p.user_id || p.userId || p.user?.uid || p.user?.id;
+            return String(pid) === String(u.id) || (p.user?.displayName === u.display_name);
+        }).length || u.posts_count || 0;
+        return `<tr>
+            <td>
+                <div class="user-cell">
+                    <div style="width:32px;height:32px;border-radius:50%;background:var(--cyan-dim);border:1.5px solid var(--border-bright);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:var(--cyan);">${(u.display_name||'?')[0].toUpperCase()}</div>
+                    <div>
+                        <div class="user-cell-name">${esc(u.display_name||'Unknown')}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="text-dim mono">${esc(u.email||'')}</td>
+            <td>
+                <button class="btn btn-view" onclick="showUserPosts('${esc(u.id)}','${esc(u.display_name||'Unknown')}')" style="gap:0.4rem;">
+                    <i class="fas fa-newspaper"></i> ${u.posts_count||userPostCount} posts
+                </button>
+            </td>
+            <td class="text-dim" style="font-size:0.8rem;">${formatDate(u.created_at)}</td>
+            <td>
+                <button class="btn btn-del" onclick="confirmDelete('user','${esc(u.id)}','${esc(u.display_name)}')"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function renderTopContributors() {
+    const sorted = [...data.users].sort((a, b) => (b.posts_count||0) - (a.posts_count||0)).slice(0, 10);
+    const tbody = document.getElementById('topContributorsBody');
+    tbody.innerHTML = sorted.map((u, i) => `
+        <tr>
+            <td><span class="mono" style="color:${i<3?'var(--amber)':'var(--text-dim)'};">#${i+1}</span></td>
+            <td>
+                <div class="user-cell">
+                    <div style="width:28px;height:28px;border-radius:50%;background:var(--cyan-dim);border:1px solid var(--border-bright);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:var(--cyan);">${(u.display_name||'?')[0].toUpperCase()}</div>
+                    ${esc(u.display_name||'Unknown')}
+                </div>
+            </td>
+            <td><span class="tag tag-green">${u.posts_count||0}</span></td>
+            <td class="text-amber">${(u.average_rating||0).toFixed ? parseFloat(u.average_rating||0).toFixed(1) : '—'} ★</td>
+            <td class="text-dim" style="font-size:0.8rem;">${formatDate(u.created_at)}</td>
+        </tr>`).join('') || '<tr><td colspan="5" class="empty-state">No data</td></tr>';
+}
+
+// ── USER POSTS DRILL-DOWN ──
+function showUserPosts(userId, userName) {
+    // Navigate to users tab and show the user posts panel
+    switchTab('users', document.querySelector('[data-tab=users]'));
+
+    // Find posts for this user - try multiple ID/name matching strategies
+    const userPosts = data.posts.filter(p => {
+        const pid = p.user_id || p.userId || p.user?.uid || p.user?.id || p.user?.userId;
+        const pname = p.user?.displayName || p.display_name || p.userName;
+        return String(pid) === String(userId) || pname === userName;
+    });
+
+    document.getElementById('usersListPanel').style.display = 'none';
+    document.getElementById('userPostsPanel').style.display = 'block';
+    document.getElementById('userPostsName').textContent = userName;
+    document.getElementById('userPostsCount').textContent = userPosts.length + ' posts';
+
+    const grid = document.getElementById('userPostsGrid');
+    if (!userPosts.length) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-inbox"></i><br>No posts found for this user</div>';
+        return;
+    }
+
+    const mediaBaseUrl = getConfig().api?.mediaUrl || '';
+    grid.innerHTML = userPosts.map(p => {
+        const mediaHtml = renderPostMediaThumb(p, mediaBaseUrl);
+        const rating = parseFloat(p.averageRating||p.average_rating||0).toFixed(1);
+        const hasMedia = !!(p.image_url||p.imageUrl||p.video_url||p.videoUrl||p.mediaUrl||p.media_url);
+        return `<div class="user-post-card" onclick="openPostDetail('${esc(String(p.id))}')">
+            ${mediaHtml}
+            <div class="user-post-card-body">
+                <div class="user-post-card-text">${esc((p.content||'').substring(0,120))}${(p.content||'').length>120?'…':''}</div>
+                <div class="user-post-card-meta">
+                    <span class="user-post-card-rating">${rating} ★</span>
+                    <span class="user-post-card-date">${formatDate(p.created_at||p.createdAt)}</span>
+                </div>
+                <div class="user-post-card-actions">
+                    <button class="btn btn-flag" onclick="event.stopPropagation();openFlag('${esc(String(p.id))}')"><i class="fas fa-flag"></i> Flag</button>
+                    <button class="btn btn-del" onclick="event.stopPropagation();confirmDelete('post','${esc(String(p.id))}','')"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function hideUserPosts() {
+    document.getElementById('usersListPanel').style.display = 'block';
+    document.getElementById('userPostsPanel').style.display = 'none';
+}
+
+// ── RENDER POST MEDIA THUMBNAIL (unified helper) ──
+function renderPostMediaThumb(p, mediaBaseUrl) {
+    // Try all known field names your API might return
+    const imgUrl = p.image_url || p.imageUrl || p.img_url || p.photo_url ||
+                   (p.media_type === 'image' ? (p.media_url || p.mediaUrl) : null);
+    const vidUrl = p.video_url || p.videoUrl || p.vid_url ||
+                   (p.media_type === 'video' ? (p.media_url || p.mediaUrl) : null);
+
+    if (vidUrl) {
+        const full = vidUrl.startsWith('http') ? vidUrl : mediaBaseUrl + vidUrl;
+        return `<div style="position:relative;">
+            <video class="user-post-card-media" muted preload="metadata" src="${esc(full)}#t=1" onerror="this.parentElement.innerHTML='<div class=\\'user-post-card-media-placeholder\\'><i class=\\'fas fa-video\\'></i></div>'"></video>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+                <i class="fas fa-circle-play" style="font-size:2.5rem;color:white;text-shadow:0 2px 10px rgba(0,0,0,0.6);"></i>
+            </div>
+            <span style="position:absolute;top:0.5rem;left:0.5rem;background:rgba(8,12,20,0.8);border:1px solid var(--border-bright);border-radius:4px;padding:0.2rem 0.5rem;font-size:0.65rem;font-family:'JetBrains Mono',monospace;color:var(--cyan);">VID</span>
+        </div>`;
+    } else if (imgUrl) {
+        const full = imgUrl.startsWith('http') ? imgUrl : mediaBaseUrl + imgUrl;
+        return `<div style="position:relative;">
+            <img class="user-post-card-media" src="${esc(full)}" alt="Post image" onerror="this.parentElement.innerHTML='<div class=\\'user-post-card-media-placeholder\\'><i class=\\'fas fa-image\\'></i></div>'">
+            <span style="position:absolute;top:0.5rem;left:0.5rem;background:rgba(8,12,20,0.8);border:1px solid var(--border-bright);border-radius:4px;padding:0.2rem 0.5rem;font-size:0.65rem;font-family:'JetBrains Mono',monospace;color:var(--green);">IMG</span>
+        </div>`;
+    } else {
+        return `<div class="user-post-card-media-placeholder"><i class="fas fa-align-left"></i></div>`;
+    }
+}
+
+// ── RENDER POSTS ──
+function renderPosts(posts) {
+    const tbody = document.getElementById('postsBody');
+    if (!posts.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-file-circle-xmark"></i> No posts found</td></tr>'; return; }
+    tbody.innerHTML = posts.map(p => {
+        const { imgUrl, vidUrl } = getPostMedia(p);
+        const hasImg = !!imgUrl; const hasVid = !!vidUrl;
+        const mediaIcon = hasVid ? '<span class="tag tag-cyan">📹 Video</span>' : hasImg ? '<span class="tag tag-green">🖼 Image</span>' : '<span class="tag" style="background:var(--bg3);color:var(--text-faint);">Text</span>';
+        const rating = parseFloat(p.averageRating||p.average_rating||0).toFixed(1);
+        return `<tr>
+            <td class="mono text-dim">#${esc(String(p.id||''))}</td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc((p.content||'').substring(0,60))}${(p.content||'').length>60?'…':''}</td>
+            <td class="text-dim">${esc(p.user?.displayName||p.display_name||'Unknown')}</td>
+            <td class="text-amber">${rating} ★</td>
+            <td>${mediaIcon}</td>
+            <td class="text-dim" style="font-size:0.8rem;">${formatDate(p.created_at||p.createdAt)}</td>
+            <td>
+                <div style="display:flex;gap:0.35rem;">
+                    <button class="btn btn-view" onclick="openPostDetail('${esc(String(p.id))}')"><i class="fas fa-eye"></i></button>
+                    <button class="btn btn-flag" onclick="openFlag('${esc(String(p.id))}')"><i class="fas fa-flag"></i></button>
+                    <button class="btn btn-del" onclick="confirmDelete('post','${esc(String(p.id))}','')"><i class="fas fa-trash"></i></button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function renderRecentPosts() {
+    const tbody = document.getElementById('recentPostsBody');
+    const recent = [...data.posts].slice(0, 8);
+    if (!recent.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No posts yet</td></tr>'; return; }
+    tbody.innerHTML = recent.map(p => {
+        const { imgUrl, vidUrl } = getPostMedia(p);
+        const mediaTag = vidUrl ? '<span class="tag tag-cyan">Video</span>' : imgUrl ? '<span class="tag tag-green">Image</span>' : '—';
+        const rating = parseFloat(p.averageRating||p.average_rating||0).toFixed(1);
+        return `<tr>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc((p.content||'').substring(0,70))}</td>
+            <td class="text-dim">${esc(p.user?.displayName||p.display_name||'?')}</td>
+            <td class="text-amber">${rating} ★</td>
+            <td>${mediaTag}</td>
+            <td class="text-dim" style="font-size:0.8rem;">${formatDate(p.created_at||p.createdAt)}</td>
+            <td><button class="btn btn-view" onclick="openPostDetail('${esc(String(p.id))}')"><i class="fas fa-eye"></i></button></td>
+        </tr>`;
+    }).join('');
+}
+
+// ── RENDER COMMENTS ──
+function renderComments(comments) {
+    const tbody = document.getElementById('commentsBody');
+    if (!comments.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-comment-slash"></i> No comments found</td></tr>'; return; }
+    tbody.innerHTML = comments.map(c => `
+        <tr>
+            <td style="max-width:280px;">${esc((c.content||c.text||'').substring(0,80))}</td>
+            <td class="text-dim">${esc(c.user?.displayName||c.display_name||'Unknown')}</td>
+            <td class="mono text-dim">#${esc(String(c.postId||c.post_id||''))}</td>
+            <td class="text-dim" style="font-size:0.8rem;">${formatDate(c.created_at||c.createdAt)}</td>
+            <td><button class="btn btn-del" onclick="confirmDelete('comment','${esc(String(c.id))}','')"><i class="fas fa-trash"></i></button></td>
+        </tr>`).join('');
+}
+
+// ── MEDIA GALLERY ──
+function getPostMedia(p) {
+    const imgUrl = p.image_url || p.imageUrl || p.img_url || p.photo_url ||
+                   (p.media_type === 'image' ? (p.media_url || p.mediaUrl) : null);
+    const vidUrl = p.video_url || p.videoUrl || p.vid_url ||
+                   (p.media_type === 'video' ? (p.media_url || p.mediaUrl) : null);
+    return { imgUrl, vidUrl };
+}
+
+function buildMediaGallery() {
+       allMedia = [];
+    data.posts.forEach(p => {
+        const img = p.imageUrl || p.image_url || null;
+        const vid = p.videoUrl || p.video_url || null;
+        if (img) allMedia.push({ type: 'image', url: img, post: p });
+        if (vid) allMedia.push({ type: 'video', url: vid, post: p });
+    });
+    document.getElementById('stat-media').textContent = allMedia.length;
+    document.getElementById('badge-media').textContent = allMedia.length;
+    renderMedia();
+}
+
+function filterMedia(type) { mediaFilter = type; renderMedia(); }
+
+function renderMedia() {
+    const grid = document.getElementById('mediaGrid');
+    const filtered = mediaFilter === 'all' ? allMedia : allMedia.filter(m => m.type === mediaFilter);
+    if (!filtered.length) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-photo-film"></i> No media found</div>';
+        return;
+    }
+    const mediaBaseUrl = getConfig().api?.mediaUrl || 'https://patr.me/uploads/';
+    grid.innerHTML = filtered.map(m => {
+        const postId = m.post_id || (m.post && m.post.id);
+        const author = m.author || m.post?.user?.displayName || m.post?.display_name || 'Unknown';
+        const date = m.created_at || m.post?.created_at || m.post?.createdAt || '';
+        const fullUrl = (m.url || '').startsWith('http') ? m.url : mediaBaseUrl + m.url;
+        const thumb = m.type === 'image'
+            ? `<img class="media-thumb" src="${esc(fullUrl)}" alt="Post image" loading="lazy">`
+            : `<video class="media-thumb-vid" muted preload="metadata" src="${esc(fullUrl)}#t=1"></video>
+               <div class="video-play"><i class="fas fa-circle-play"></i></div>`;
+
+        return `<div class="media-item" onclick="openPostDetail('${esc(String(postId))}')">
+            ${thumb}
+            <div class="media-type-badge">${m.type === 'image' ? 'IMG' : 'VID'}</div>
+            <div class="media-actions">
+                <button class="media-flag-btn" title="Flag post" onclick="event.stopPropagation();openFlag('${esc(String(postId))}')"><i class="fas fa-flag"></i></button>
+                <button class="media-del-btn" title="Delete post" onclick="event.stopPropagation();confirmDelete('post','${esc(String(postId))}','')"><i class="fas fa-trash"></i></button>
+            </div>
+            <div class="media-overlay">
+                <div class="media-author">${esc(author)}</div>
+                <div class="media-date">${formatDate(date)}</div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ── POST DETAIL MODAL ──
+async function openPostDetail(postId) {
+    const modal = document.getElementById('postDetailModal');
+    const body = document.getElementById('postDetailBody');
+    body.innerHTML = '<div style="text-align:center;padding:2rem;"><i class="fas fa-spinner fa-spin" style="font-size:2rem;color:var(--cyan);"></i></div>';
+    modal.classList.add('open');
+
+    const post = data.posts.find(p => String(p.id) === String(postId));
+    if (!post) { body.innerHTML = '<p>Post not found</p>'; return; }
+
+    const postComments = data.comments.filter(c => String(c.postId||c.post_id) === String(postId));
+    const { imgUrl, vidUrl } = getPostMedia(post);
+    const mediaUrl = getConfig().api?.mediaUrl || '';
+    const rating = parseFloat(post.averageRating||post.average_rating||0).toFixed(1);
+    const author = post.user?.displayName || post.display_name || 'Unknown';
+    const email = post.user?.email || post.email || '';
+
+    let mediaHtml = '';
+    if (vidUrl) {
+        const fullVid = vidUrl.startsWith('http') ? vidUrl : mediaUrl + vidUrl;
+        mediaHtml = `<video class="post-detail-video" controls src="${esc(fullVid)}"></video>`;
+    } else if (imgUrl) {
+        const fullImg = imgUrl.startsWith('http') ? imgUrl : mediaUrl + imgUrl;
+        mediaHtml = `<img class="post-detail-img" src="${esc(fullImg)}" alt="Post image">`;
+    }
+
+    body.innerHTML = `
+        ${mediaHtml}
+        <div class="post-detail-content">${esc(post.content||'')}</div>
+        <div class="meta-row">
+            <div class="meta-box">
+                <div class="meta-box-label">Rating</div>
+                <div class="meta-box-val">${rating}</div>
+                <div style="color:var(--amber);font-size:0.75rem;">★★★★★</div>
+            </div>
+            <div class="meta-box">
+                <div class="meta-box-label">Comments</div>
+                <div class="meta-box-val">${postComments.length}</div>
+            </div>
+            <div class="meta-box">
+                <div class="meta-box-label">Author</div>
+                <div style="font-weight:600;margin-top:4px;">${esc(author)}</div>
+                <div style="font-size:0.7rem;color:var(--text-dim);">${esc(email)}</div>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;">
+            <div style="font-size:0.8rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);">
+                <i class="fas fa-comment" style="color:var(--cyan);"></i> Comments (${postComments.length})
+            </div>
+        </div>
+        <div class="comments-list">
+            ${postComments.length ? postComments.map(c => `
+                <div class="comment-item">
+                    <div>
+                        <div class="comment-text">${esc(c.content||c.text||'')}</div>
+                        <div class="comment-author">${esc(c.user?.displayName||c.display_name||'Unknown')} · ${formatDate(c.created_at||c.createdAt)}</div>
+                    </div>
+                    <button class="btn btn-del" onclick="confirmDelete('comment','${esc(String(c.id))}','')"><i class="fas fa-trash"></i></button>
+                </div>`).join('') : '<div class="empty-state"><i class="fas fa-comment-slash"></i> No comments on this post</div>'}
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-top:1.5rem;justify-content:flex-end;">
+            <button class="btn btn-flag" onclick="closeModal('postDetailModal');openFlag('${esc(String(post.id))}')"><i class="fas fa-flag"></i> Flag Post</button>
+            <button class="btn btn-del" onclick="closeModal('postDetailModal');confirmDelete('post','${esc(String(post.id))}','')"><i class="fas fa-trash"></i> Delete Post</button>
+        </div>`;
+}
+
+// ── FLAG ──
+function openFlag(postId) {
+    document.getElementById('flagPostId').value = postId;
+    document.getElementById('flagReason').value = '';
+    document.getElementById('flagModal').classList.add('open');
+}
+
+async function submitFlag() {
+    const postId = document.getElementById('flagPostId').value;
+    const reason = document.getElementById('flagReason').value.trim();
+    if (!reason) { toast('Please enter a reason', 'error'); return; }
+    try {
+        const res = await apiRequest('flag-post', { method: 'POST', body: JSON.stringify({ postId, reason }) });
+        if (res.ok) { toast('Notification sent to user!', 'success'); closeModal('flagModal'); }
+        else { toast('Failed to send email notification', 'error'); }
+    } catch(e) { toast('Network error: ' + e.message, 'error'); }
+}
+
+// ── DELETE ──
+function confirmDelete(type, id, name) {
+    document.getElementById('confirmTitle').textContent = `Delete ${type}?`;
+    document.getElementById('confirmMsg').textContent = `This will permanently delete this ${type}${name?' ('+name+')':''}. This action cannot be undone.`;
+    const btn = document.getElementById('confirmOkBtn');
+    btn.onclick = async () => {
+        closeModal('confirmModal');
+        await doDelete(type, id);
+    };
+    document.getElementById('confirmModal').classList.add('open');
+}
+
+async function doDelete(type, id) {
+    const endpointMap = { user: 'users', post: 'posts', comment: 'comments' };
+    const endpoint = endpointMap[type] || type + 's';
+    try {
+        const res = await apiRequest(`${endpoint}/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            toast(`${type.charAt(0).toUpperCase()+type.slice(1)} deleted successfully`, 'success');
+            await loadAll();
+        } else { toast(`Failed to delete ${type}`, 'error'); }
+    } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ── INVITATIONS ──
+async function loadInvitations() {
+    try {
+        const res = await apiRequest('invitations');
+        if (res.ok) {
+            const text = await res.text();
+            allInvitations = text.trim() ? JSON.parse(text) : [];
+        } else {
+            allInvitations = [];
+        }
+    } catch(e) {
+        console.error('Invitations error', e);
+        allInvitations = [];
+    }
+    updateInvitationCounts();
+    renderInvitations();
+}
+
+function updateInvitationCounts() {
+    const pending  = allInvitations.filter(i => i.status === 'pending').length;
+    const approved = allInvitations.filter(i => i.status === 'approved').length;
+    const rejected = allInvitations.filter(i => i.status === 'rejected').length;
+    document.getElementById('invCount-pending').textContent  = pending;
+    document.getElementById('invCount-approved').textContent = approved;
+    document.getElementById('invCount-rejected').textContent = rejected;
+    document.getElementById('badge-invitations').textContent = pending || '—';
+    document.getElementById('stat-invitations').textContent  = pending;
+}
+
+function setInvFilter(f) {
+    invFilter = f;
+    document.querySelectorAll('.inv-filter-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('invFilter-' + f)?.classList.add('active');
+    renderInvitations();
+}
+
+function renderInvitations() {
+    const q = (document.getElementById('invSearch')?.value || '').toLowerCase();
+    let list = allInvitations;
+    if (invFilter !== 'all') list = list.filter(i => i.status === invFilter);
+    if (q) list = list.filter(i =>
+        (i.display_name||i.displayName||i.name||'').toLowerCase().includes(q) ||
+        (i.email||'').toLowerCase().includes(q)
+    );
+
+    const tbody = document.getElementById('invitationsBody');
+    if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="empty-state"><i class="fas fa-envelope-open-text"></i> No ${invFilter === 'all' ? '' : invFilter + ' '}invitations found</td></tr>`;
+        return;
+    }
+
+    const statusTag = s => {
+        if (s === 'approved') return '<span class="tag tag-green">approved</span>';
+        if (s === 'rejected') return '<span class="tag tag-red">rejected</span>';
+        return '<span class="tag tag-amber">pending</span>';
+    };
+
+    tbody.innerHTML = list.map(inv => {
+        const invId = inv.id || '';
+        const name  = esc(inv.display_name || inv.displayName || inv.name || 'Unknown');
+        const email = esc(inv.email || '');
+        const date  = formatDate(inv.created_at || inv.createdAt || inv.requested_at);
+        const isPending = inv.status === 'pending';
+        // Pass email as primary identifier; id as fallback
+        const approveArgs = `'${email}','${invId}','${name}'`;
+        return `<tr>
+            <td>
+                <div class="user-cell">
+                    <div style="width:32px;height:32px;border-radius:50%;background:var(--cyan-dim);border:1.5px solid var(--border-bright);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:var(--cyan);">${(name[0]||'?').toUpperCase()}</div>
+                    <div>
+                        <div class="user-cell-name">${name}</div>
+                        <div class="user-cell-email mono">${email}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="text-dim mono">${email}</td>
+            <td class="text-dim" style="font-size:0.8rem;">${date}</td>
+            <td>${statusTag(inv.status)}</td>
+            <td>
+                <div style="display:flex;gap:0.35rem;">
+                    ${isPending ? `
+                    <button class="btn btn-approve" onclick="approveInvite(${approveArgs})"><i class="fas fa-check"></i> Approve</button>
+                    <button class="btn btn-reject"  onclick="rejectInvite(${approveArgs})"><i class="fas fa-ban"></i> Reject</button>
+                    ` : `
+                    <button class="btn btn-view" style="opacity:0.5;cursor:default;" disabled><i class="fas fa-lock"></i> ${inv.status}</button>
+                    `}
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+async function approveInvite(email, id, name) {
+    if (!email && !id) { toast('Missing identifier', 'error'); return; }
+    try {
+        const payload = email ? { email } : { id };
+        const res = await apiRequest('invite-approve', { method: 'POST', body: JSON.stringify(payload) });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+            toast(`✅ ${name || 'User'} approved! Approval email sent.`, 'success');
+            await loadInvitations();
+        } else {
+            toast('Approve failed: ' + (data.error || res.status), 'error');
+        }
+    } catch(e) { toast('Network error: ' + e.message, 'error'); }
+}
+
+async function rejectInvite(email, id, name) {
+    if (!email && !id) { toast('Missing identifier', 'error'); return; }
+    try {
+        const payload = email ? { email } : { id };
+        const res = await apiRequest('invite-reject', { method: 'POST', body: JSON.stringify(payload) });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+            toast(`🚫 ${name || 'User'} rejected.`, 'info');
+            await loadInvitations();
+        } else {
+            toast('Reject failed: ' + (data.error || res.status), 'error');
+        }
+    } catch(e) { toast('Network error: ' + e.message, 'error'); }
+}
+
+// ── SEARCH/FILTER ──
+function filterUsers() {
+    const q = document.getElementById('userSearch').value.toLowerCase();
+    renderUsers(data.users.filter(u => (u.display_name||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q)));
+}
+function filterPosts() {
+    const q = document.getElementById('postSearch').value.toLowerCase();
+    renderPosts(data.posts.filter(p => (p.content||'').toLowerCase().includes(q) || (p.user?.displayName||p.display_name||'').toLowerCase().includes(q)));
+}
+function filterComments() {
+    const q = document.getElementById('commentSearch').value.toLowerCase();
+    renderComments(data.comments.filter(c => (c.content||c.text||'').toLowerCase().includes(q)));
+}
+
+// ── CHARTS ──
+let charts = {};
+function renderCharts() {
+    // Posts line chart - group by date
+    const postsByDate = {};
+    data.posts.forEach(p => {
+        const d = (p.created_at||p.createdAt||'').split('T')[0];
+        if (d) postsByDate[d] = (postsByDate[d]||0) + 1;
+    });
+    const dates = Object.keys(postsByDate).sort().slice(-14);
+    const counts = dates.map(d => postsByDate[d]);
+
+    if (charts.posts) charts.posts.destroy();
+    const ctx1 = document.getElementById('chartPosts')?.getContext('2d');
+    if (ctx1) {
+        charts.posts = new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: dates.map(d => d.slice(5)),
+                datasets: [{ label: 'Posts', data: counts, borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.1)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#00d4ff' }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#7a8bb0', font: { size: 10 } }, grid: { color: 'rgba(0,212,255,0.05)' } }, y: { ticks: { color: '#7a8bb0', font: { size: 10 } }, grid: { color: 'rgba(0,212,255,0.05)' } } } }
+        });
+    }
+
+    // Breakdown doughnut
+    const imgCount = data.posts.filter(p => p.image_url||p.imageUrl).length;
+    const vidCount = data.posts.filter(p => p.video_url||p.videoUrl).length;
+    const txtCount = data.posts.length - imgCount - vidCount;
+    if (charts.breakdown) charts.breakdown.destroy();
+    const ctx2 = document.getElementById('chartBreakdown')?.getContext('2d');
+    if (ctx2) {
+        charts.breakdown = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Text Posts', 'Image Posts', 'Video Posts'],
+                datasets: [{ data: [txtCount, imgCount, vidCount], backgroundColor: ['rgba(0,212,255,0.6)', 'rgba(0,255,136,0.6)', 'rgba(124,92,191,0.6)'], borderColor: ['#00d4ff','#00ff88','#7c5cbf'], borderWidth: 2 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#7a8bb0', font: { size: 11 }, padding: 10 } } }, cutout: '65%' }
+        });
+    }
+
+    // Top posts by rating
+    const topPosts = [...data.posts].filter(p => parseFloat(p.averageRating||p.average_rating||0) > 0).sort((a,b) => parseFloat(b.averageRating||b.average_rating||0) - parseFloat(a.averageRating||a.average_rating||0)).slice(0, 6);
+    if (charts.topPosts) charts.topPosts.destroy();
+    const ctx3 = document.getElementById('chartTopPosts')?.getContext('2d');
+    if (ctx3) {
+        charts.topPosts = new Chart(ctx3, {
+            type: 'bar',
+            data: {
+                labels: topPosts.map(p => (p.content||'').substring(0,15) + '…'),
+                datasets: [{ label: 'Rating', data: topPosts.map(p => parseFloat(p.averageRating||p.average_rating||0).toFixed(1)), backgroundColor: 'rgba(255,179,0,0.3)', borderColor: '#ffb300', borderWidth: 2 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#7a8bb0', font: { size: 9 } }, grid: { display: false } }, y: { ticks: { color: '#7a8bb0', font: { size: 10 } }, grid: { color: 'rgba(0,212,255,0.05)' }, max: 5 } } }
+        });
+    }
+
+    // User engagement (posts per user)
+    const topUsers = [...data.users].sort((a,b) => (b.posts_count||0)-(a.posts_count||0)).slice(0,6);
+    if (charts.engagement) charts.engagement.destroy();
+    const ctx4 = document.getElementById('chartEngagement')?.getContext('2d');
+    if (ctx4) {
+        charts.engagement = new Chart(ctx4, {
+            type: 'bar',
+            data: {
+                labels: topUsers.map(u => (u.display_name||'?').split(' ')[0]),
+                datasets: [{ label: 'Posts', data: topUsers.map(u => u.posts_count||0), backgroundColor: 'rgba(0,255,136,0.25)', borderColor: '#00ff88', borderWidth: 2 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#7a8bb0', font: { size: 10 } }, grid: { color: 'rgba(0,212,255,0.05)' } }, y: { ticks: { color: '#7a8bb0', font: { size: 10 } }, grid: { display: false } } } }
+        });
+    }
+}
+
+// ── TAB NAVIGATION ──
+const TAB_TITLES = { overview: 'Dashboard', analytics: 'Analytics', posts: 'Posts', media: 'Media Gallery', comments: 'Comments', users: 'Users', invitations: 'Invitations', config: 'Configuration' };
+function switchTab(name, el) {
+    document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    if (el) el.classList.add('active');
+    else document.querySelector(`[data-tab="${name}"]`)?.classList.add('active');
+    document.getElementById('pageTitle').textContent = TAB_TITLES[name] || name;
+}
+
+// ── MODALS ──
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ── TOAST ──
+function toast(msg, type = 'info') {
+    const c = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
+    t.className = `toast ${type}`;
+    t.innerHTML = `<i class="fas ${icons[type]||icons.info}"></i> ${msg}`;
+    c.appendChild(t);
+    setTimeout(() => { t.style.animation = 'slideOut 0.3s ease forwards'; setTimeout(() => t.remove(), 300); }, 4000);
+}
+
+// ── UTILS ──
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function formatDate(ds) {
+    if (!ds) return '—';
+    const d = new Date(ds);
+    return isNaN(d) ? ds : d.toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// Auto-refresh stats every 60s
+setInterval(() => { if (currentUser) loadStats(); }, 60000);
+</script>
+</body>
+</html>

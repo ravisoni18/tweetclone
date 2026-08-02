@@ -82,7 +82,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onUserClick }) => {
       setTrendingLoading(true);
       const token = await getAuthToken();
       
-      const response = await fetch('https://patr.me/api/posts/trending', {
+      const response = await fetch('/api/posts/trending', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -148,7 +148,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onUserClick }) => {
       setSuggestedLoading(true);
       const token = await getAuthToken();
       
-      const response = await fetch('https://patr.me/api/users/suggested', {
+      const response = await fetch('/api/users/suggested', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -228,7 +228,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onUserClick }) => {
       setShowResults(true);
       const token = await getAuthToken();
       
-      const response = await fetch(`https://patr.me/api/users/search?q=${encodeURIComponent(query)}`, {
+      const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -259,7 +259,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onUserClick }) => {
       const token = await getAuthToken();
       const userData = getCurrentUserData();
       
-      const response = await fetch(`https://patr.me/api/follow/${userId}`, {
+      const response = await fetch(`/api/follow/${userId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

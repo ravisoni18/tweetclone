@@ -73,7 +73,7 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({ onClose, onPublish }) => 
       const token = await getAuthToken();
       const fd = new FormData();
       fd.append('media', coverImage);
-      const res = await fetch('https://patr.me/api/upload', {
+      const res = await fetch('/api/upload', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: fd,
@@ -122,7 +122,7 @@ const ArticleEditor: React.FC<ArticleEditorProps> = ({ onClose, onPublish }) => 
         readingTimeMinutes: calcReadingTime(content),
       };
 
-      const res = await fetch('https://patr.me/api/articles', {
+      const res = await fetch('/api/articles', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

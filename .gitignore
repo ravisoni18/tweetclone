@@ -21,3 +21,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 *.apk
+
+# docker deployment secrets/data
+.env
+mysql/init/*.sql
+certs/

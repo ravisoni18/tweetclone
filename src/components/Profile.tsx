@@ -74,7 +74,7 @@ const Profile: React.FC<ProfileProps> = ({ userId, onBack, onArticleClick }) => 
         
         console.log('🔍 Loading profile for:', targetUserId);
         
-        const response = await fetch(`https://patr.me/api/users/${targetUserId}`, {
+        const response = await fetch(`/api/users/${targetUserId}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -141,10 +141,10 @@ const Profile: React.FC<ProfileProps> = ({ userId, onBack, onArticleClick }) => 
         console.log('🔍 Loading posts for user:', targetUserId);
         
         const endpoints = [
-          `https://patr.me/api/users/${targetUserId}/posts`,
-          `https://patr.me/api/posts/user/${targetUserId}`,
-          `https://patr.me/api/posts/feed?type=user&userId=${targetUserId}`,
-          `https://patr.me/api/posts/feed?type=all`
+          `/api/users/${targetUserId}/posts`,
+          `/api/posts/user/${targetUserId}`,
+          `/api/posts/feed?type=user&userId=${targetUserId}`,
+          `/api/posts/feed?type=all`
         ];
 
         let postsData = null;
@@ -249,7 +249,7 @@ const Profile: React.FC<ProfileProps> = ({ userId, onBack, onArticleClick }) => 
         
         console.log('📚 Loading articles for user:', targetUserId);
         
-        const response = await fetch(`https://patr.me/api/articles?userId=${targetUserId}&status=published`, {
+        const response = await fetch(`/api/articles?userId=${targetUserId}&status=published`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -286,7 +286,7 @@ const Profile: React.FC<ProfileProps> = ({ userId, onBack, onArticleClick }) => 
       const token = await getAuthToken();
       const userData = getCurrentUserData();
       
-      const response = await fetch(`https://patr.me/api/follow/${profileUser.id}`, {
+      const response = await fetch(`/api/follow/${profileUser.id}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -329,7 +329,7 @@ const Profile: React.FC<ProfileProps> = ({ userId, onBack, onArticleClick }) => 
         website: editData.website?.trim() || profileUser?.website || '',
       };
 
-      const response = await fetch(`https://patr.me/api/users/${targetUserId}`, {
+      const response = await fetch(`/api/users/${targetUserId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

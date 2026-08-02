@@ -1,0 +1,23 @@
+FROM php:8.2-apache
+
+RUN docker-php-ext-install pdo pdo_mysql mysqli \
+    && a2enmod rewrite \
+    && sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+
+COPY docker/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+
+COPY api/ /var/www/html/api/
+COPY admin/ /var/www/html/admin/
+COPY docker/api.htaccess /var/www/html/api/.htaccess
+
+RUN rm -f \
+    "/var/www/html/api/index(1).php" \
+    /var/www/html/api/index-simple.php \
+    /var/www/html/api/database-check.php \
+    /var/www/html/api/endpoint-test.php \
+    /var/www/html/api/debug.php \
+    /var/www/html/admin/index1.html \
+    && mkdir -p /var/www/html/uploads \
+    && chown -R www-data:www-data /var/www/html
+
+EXPOSE 80

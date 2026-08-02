@@ -2,7 +2,7 @@
 
 import { auth } from '../config/firebase';
 
-const API_BASE_URL = 'https://patr.me/api';
+const API_BASE_URL = '/api';
 
 // Helper function to get authentication headers
 const getAuthHeaders = async () => {

@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter Clone - Admin Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .login-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .login-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .login-card h2 {
+            color: #1da1f2;
+            margin-bottom: 1rem;
+        }
+
+        .login-card p {
+            color: #657786;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .admin-info {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            font-size: 0.875rem;
+        }
+
+        .google-btn {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            width: 100%;
+            transition: background 0.3s ease;
+        }
+
+        .google-btn:hover {
+            background: #357ae8;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #1da1f2;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #1da1f2;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .stat-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #f1f3f4;
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            background: none;
+            border: none;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #657786;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            color: #1da1f2;
+            border-bottom-color: #1da1f2;
+            font-weight: 600;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 15px;
+            border: 1px solid #e1e8ed;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #f1f3f4;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-info { background: #3498db; color: white; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 3000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 2rem;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            font-family: inherit;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            color: white;
+        }
+        .alert-success { background: #2ecc71; }
+        .alert-danger { background: #e74c3c; }
+        .alert-info { background: #3498db; }
+    </style>
+</head>
+<body>
+
+    <div id="loginContainer" class="login-container">
+        <div class="login-card">
+            <h2><i class="fab fa-twitter"></i> Admin Access</h2>
+            <p>Sign in with Google to access the dashboard.</p>
+            <div class="admin-info">Authorized: ravisoni18@gmail.com</div>
+            <button id="loginBtn" class="google-btn"><i class="fab fa-google"></i> Sign in with Google</button>
+            <div id="loginError" style="margin-top: 1rem; color: #e74c3c;"></div>
+        </div>
+    </div>
+
+    <div id="dashboardContainer" style="display: none;">
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fab fa-twitter"></i> Admin Dashboard</h1>
+                <div class="user-info">
+                    <img id="userAvatar" src="" class="user-avatar">
+                    <div class="user-details">
+                        <h3 id="userName">Admin</h3>
+                        <p id="userEmail">Email</p>
+                    </div>
+                    <button id="logoutBtn" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="container">
+            <div id="alertContainer"></div>
+
+            <div class="stat-cards">
+                <div class="stat-card"><h3>Users</h3><h2 id="totalUsers">Loading...</h2></div>
+                <div class="stat-card"><h3>Posts</h3><h2 id="totalPosts">Loading...</h2></div>
+                <div class="stat-card"><h3>Comments</h3><h2 id="totalComments">Loading...</h2></div>
+                <div class="stat-card"><h3>Avg Rating</h3><h2 id="avgRating">Loading...</h2></div>
+            </div>
+
+            <div class="section">
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab(event, 'users')">Users</button>
+                    <button class="tab" onclick="showTab(event, 'posts')">Posts</button>
+                    <button class="tab" onclick="showTab(event, 'comments')">Comments</button>
+                </div>
+
+                <div id="users" class="content-section active">
+                    <div class="controls"><input type="text" id="userSearch" placeholder="Search users..."></div>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>User</th><th>Email</th><th>Posts</th><th>Joined</th><th>Actions</th></tr></thead>
+                            <tbody id="usersTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="posts" class="content-section">
+                    <div class="controls"><input type="text" id="postSearch" placeholder="Search posts..."></div>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>ID</th><th>Content</th><th>Author</th><th>Rating</th><th>Actions</th></tr></thead>
+                            <tbody id="postsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="comments" class="content-section">
+                    <div class="controls"><input type="text" id="commentSearch" placeholder="Search comments..."></div>
+                    <div class="table-container">
+                        <table>
+                            <thead><tr><th>Comment</th><th>Author</th><th>Post ID</th><th>Actions</th></tr></thead>
+                            <tbody id="commentsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="flagModal" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-flag"></i> Flag Post & Notify User</h3>
+            <p>Reason for flagging (emailed to user from admin@patr.me):</p>
+            <input type="hidden" id="flagPostId">
+            <textarea id="flagReason" placeholder="e.g. This post violates our community guidelines regarding..."></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-info" onclick="document.getElementById('flagModal').style.display='none'">Cancel</button>
+                <button class="btn btn-warning" onclick="submitFlag()">Send Notification</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3 id="confirmTitle">Confirm</h3>
+            <p id="confirmMessage">Are you sure?</p>
+            <div class="modal-actions">
+                <button class="btn btn-info" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-danger" id="confirmButton">Delete</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBGGPT6EW0aSR2PoW8WuGouJt8VcoI4BDQ",
+        authDomain: "patr-4829d.firebaseapp.com",
+        projectId: "patr-4829d",
+        storageBucket: "patr-4829d.firebasestorage.app",
+        messagingSenderId: "964264491610",
+        appId: "1:964264491610:web:ccd38cb9d1f00e91a4f663",
+        measurementId: "G-86DQFB6D12"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const ADMIN_API_BASE = 'https://patr.me/api/admin.php';
+    
+    let currentUser = null;
+    let currentData = { users: [], posts: [], comments: [], stats: {} };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setupAuthListener();
+        setupEventListeners();
+    });
+
+    function setupAuthListener() {
+        auth.onAuthStateChanged(user => {
+            if (user && user.email === 'ravisoni18@gmail.com') {
+                currentUser = user;
+                showDashboard();
+                updateUserInfo(user);
+                loadDashboard();
+            } else {
+                if (user) {
+                    showAlert('Access denied. Not an admin.', 'danger');
+                    auth.signOut();
+                }
+                showLogin();
+            }
+        });
+    }
+
+    function setupEventListeners() {
+        document.getElementById('loginBtn').addEventListener('click', signInWithGoogle);
+        document.getElementById('logoutBtn').addEventListener('click', signOut);
+        document.getElementById('userSearch').addEventListener('input', filterUsers);
+        document.getElementById('postSearch').addEventListener('input', filterPosts);
+        document.getElementById('commentSearch').addEventListener('input', filterComments);
+    }
+
+    async function makeAuthenticatedRequest(endpoint, options = {}) {
+        if (!currentUser) throw new Error('No authenticated user');
+        const authParams = {
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
+            userName: currentUser.displayName || 'Admin',
+            admin_override: 1
+        };
+
+        const fetchOptions = {
+            method: options.method || 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            ...options
+        };
+
+        let url = `${ADMIN_API_BASE}/${endpoint}`;
+        if (fetchOptions.method === 'GET') {
+            url += `?${new URLSearchParams(authParams).toString()}`;
+        } else {
+            const originalBody = fetchOptions.body ? JSON.parse(fetchOptions.body) : {};
+            fetchOptions.body = JSON.stringify({ ...authParams, ...originalBody });
+        }
+        return fetch(url, fetchOptions);
+    }
+
+    async function loadDashboard() {
+        showAlert('Loading data...', 'info');
+        try {
+            await Promise.all([loadStats(), loadUsers(), loadPosts(), loadComments()]);
+            showAlert('Dashboard updated', 'success');
+        } catch (e) { showAlert('Load failed: ' + e.message, 'danger'); }
+    }
+
+    async function loadStats() {
+        const res = await makeAuthenticatedRequest('stats');
+        if (res.ok) {
+            const stats = await res.json();
+            document.getElementById('totalUsers').textContent = stats.users?.total_users || '0';
+            document.getElementById('totalPosts').textContent = stats.posts?.total_posts || '0';
+            document.getElementById('totalComments').textContent = stats.comments?.total_comments || '0';
+            document.getElementById('avgRating').textContent = (stats.ratings?.average_rating || 0) + '⭐';
+        }
+    }
+
+    async function loadUsers() {
+        const res = await makeAuthenticatedRequest('users');
+        if (res.ok) { currentData.users = await res.json(); displayUsers(currentData.users); }
+    }
+
+    async function loadPosts() {
+        const res = await makeAuthenticatedRequest('posts');
+        if (res.ok) { const data = await res.json(); currentData.posts = data.posts || []; displayPosts(currentData.posts); }
+    }
+
+    async function loadComments() {
+        const res = await makeAuthenticatedRequest('comments');
+        if (res.ok) { currentData.comments = await res.json(); displayComments(currentData.comments); }
+    }
+
+    function displayUsers(users) {
+        document.getElementById('usersTableBody').innerHTML = users.map(u => `
+            <tr>
+                <td><b>${u.display_name}</b></td>
+                <td>${u.email}</td>
+                <td>${u.posts_count}</td>
+                <td>${formatDate(u.created_at)}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="confirmDeleteUser('${u.id}', '${u.display_name}')">Delete</button></td>
+            </tr>`).join('');
+    }
+
+    function displayPosts(posts) {
+        document.getElementById('postsTableBody').innerHTML = posts.map(p => `
+            <tr>
+                <td>${p.id}</td>
+                <td style="max-width:200px; overflow:hidden;">${p.content}</td>
+                <td>${p.user?.displayName || 'User'}</td>
+                <td>${p.averageRating}⭐</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" onclick="openFlagModal('${p.id}')">Flag</button>
+                    <button class="btn btn-danger btn-sm" onclick="confirmDeletePost('${p.id}')">Delete</button>
+                </td>
+            </tr>`).join('');
+    }
+
+    function displayComments(comments) {
+        document.getElementById('commentsTableBody').innerHTML = comments.map(c => `
+            <tr>
+                <td>${c.content}</td>
+                <td>${c.user?.displayName || 'User'}</td>
+                <td>${c.postId}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="confirmDeleteComment('${c.id}')">Delete</button></td>
+            </tr>`).join('');
+    }
+
+    // Flagging Logic
+    function openFlagModal(postId) {
+        document.getElementById('flagPostId').value = postId;
+        document.getElementById('flagReason').value = '';
+        document.getElementById('flagModal').style.display = 'block';
+    }
+
+    async function submitFlag() {
+        const postId = document.getElementById('flagPostId').value;
+        const reason = document.getElementById('flagReason').value;
+        if (!reason) return showAlert('Reason required', 'danger');
+
+        const res = await makeAuthenticatedRequest('flag', {
+            method: 'POST',
+            body: JSON.stringify({ postId, reason })
+        });
+
+        if (res.ok) {
+            showAlert('Notification sent!', 'success');
+            document.getElementById('flagModal').style.display = 'none';
+        } else {
+            showAlert('Failed to send email.', 'danger');
+        }
+    }
+
+    // Auth Helpers
+    async function signInWithGoogle() {
+        try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); } 
+        catch (e) { document.getElementById('loginError').textContent = e.message; }
+    }
+    function signOut() { auth.signOut().then(() => { currentUser = null; showLogin(); }); }
+    function showLogin() { document.getElementById('loginContainer').style.display = 'flex'; document.getElementById('dashboardContainer').style.display = 'none'; }
+    function showDashboard() { document.getElementById('loginContainer').style.display = 'none'; document.getElementById('dashboardContainer').style.display = 'block'; }
+    function updateUserInfo(user) {
+        document.getElementById('userName').textContent = user.displayName;
+        document.getElementById('userEmail').textContent = user.email;
+        document.getElementById('userAvatar').src = user.photoURL;
+    }
+
+    // Search and Utils
+    function filterUsers() { displayUsers(currentData.users.filter(u => u.display_name.toLowerCase().includes(document.getElementById('userSearch').value.toLowerCase()))); }
+    function filterPosts() { displayPosts(currentData.posts.filter(p => p.content.toLowerCase().includes(document.getElementById('postSearch').value.toLowerCase()))); }
+    function filterComments() { displayComments(currentData.comments.filter(c => c.content.toLowerCase().includes(document.getElementById('commentSearch').value.toLowerCase()))); }
+    function showAlert(msg, type) {
+        const id = 'a' + Date.now();
+        document.getElementById('alertContainer').innerHTML = `<div id="${id}" class="alert alert-${type}">${msg}</div>`;
+        setTimeout(() => document.getElementById(id)?.remove(), 4000);
+    }
+    function formatDate(ds) { return ds ? new Date(ds).toLocaleDateString() : 'N/A'; }
+    function showTab(e, name) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        document.getElementById(name).classList.add('active');
+    }
+    function closeModal() { document.getElementById('confirmModal').style.display = 'none'; }
+    function showConfirmModal(title, msg, onConfirm) {
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmMessage').textContent = msg;
+        document.getElementById('confirmButton').onclick = () => { onConfirm(); closeModal(); };
+        document.getElementById('confirmModal').style.display = 'block';
+    }
+
+    // Delete actions
+    async function deleteUser(id, name) {
+        const res = await makeAuthenticatedRequest(`users/${id}`, { method: 'DELETE' });
+        if (res.ok) { showAlert(name + ' deleted', 'success'); loadUsers(); loadStats(); }
+    }
+    async function deletePost(id) {
+        const res = await makeAuthenticatedRequest(`posts/${id}`, { method: 'DELETE' });
+        if (res.ok) { showAlert('Post deleted', 'success'); loadPosts(); loadStats(); }
+    }
+    async function deleteComment(id) {
+        const res = await makeAuthenticatedRequest(`comments/${id}`, { method: 'DELETE' });
+        if (res.ok) { showAlert('Comment deleted', 'success'); loadComments(); loadStats(); }
+    }
+    function confirmDeleteUser(id, n) { showConfirmModal('Delete User', 'Delete ' + n + '?', () => deleteUser(id, n)); }
+    function confirmDeletePost(id) { showConfirmModal('Delete Post', 'Delete post ' + id + '?', () => deletePost(id)); }
+    function confirmDeleteComment(id) { showConfirmModal('Delete Comment', 'Delete this comment?', () => deleteComment(id)); }
+
+    function loadAllData() { loadDashboard(); }
+    setInterval(() => { if (currentUser) loadStats(); }, 60000);
+</script>
+</body>
+</html>

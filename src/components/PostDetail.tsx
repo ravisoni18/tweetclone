@@ -132,7 +132,7 @@ const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
       const token = await getAuthToken();
       
       // Check if the endpoint exists first
-      const response = await fetch(`https://patr.me/api/posts/${postId}`, {
+      const response = await fetch(`/api/posts/${postId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -223,7 +223,7 @@ const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
       setCommentsLoading(true);
       const token = await getAuthToken();
       
-      const response = await fetch(`https://patr.me/api/posts/${postId}/comments`, {
+      const response = await fetch(`/api/posts/${postId}/comments`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -264,7 +264,7 @@ const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
       const token = await getAuthToken();
       const userData = getCurrentUserData();
       
-      const response = await fetch(`https://patr.me/api/posts/${postId}/comments`, {
+      const response = await fetch(`/api/posts/${postId}/comments`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -308,7 +308,7 @@ const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
       const token = await getAuthToken();
       const userData = getCurrentUserData();
       
-      const response = await fetch(`https://patr.me/api/posts/${postId}/rating`, {
+      const response = await fetch(`/api/posts/${postId}/rating`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -353,7 +353,7 @@ const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
       const token = await getAuthToken();
       const userData = getCurrentUserData();
       
-      const response = await fetch(`https://patr.me/api/comments/${commentId}/like`, {
+      const response = await fetch(`/api/comments/${commentId}/like`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -384,7 +384,7 @@ const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
     try {
       const token = await getAuthToken();
       
-      const response = await fetch(`https://patr.me/api/comments/${commentId}`, {
+      const response = await fetch(`/api/comments/${commentId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

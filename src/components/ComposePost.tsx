@@ -341,7 +341,7 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
       }
 
       // Send request with Authorization header
-      const response = await fetch('https://patr.me/api/posts', {
+      const response = await fetch('/api/posts', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

@@ -128,7 +128,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let inviteDbStatus = 'not_found';
       try {
         const invRes = await fetch(
-          `https://patr.me/admin/admin.php/invite-status?email=${encodeURIComponent(email)}`
+          `/admin/admin.php/invite-status?email=${encodeURIComponent(email)}`
         );
         if (invRes.ok) {
           inviteDbStatus = (await invRes.json()).status ?? 'not_found';
@@ -159,7 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // pending or not_found
       if (inviteDbStatus === 'not_found') {
         try {
-          await fetch('https://patr.me/admin/admin.php/invite-request', {
+          await fetch('/admin/admin.php/invite-request', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, name: displayName }),
