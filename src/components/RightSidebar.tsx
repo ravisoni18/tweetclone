@@ -571,25 +571,7 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onUserClick }) => {
             {(Object.entries(themes) as [ThemeName, typeof themes[ThemeName]][]).map(([key, t]) => (
               <button
                 key={key}
-                onClick={() => {
-                  setTheme(key);
-                  // Apply CSS variables directly to document root
-                  const root = document.documentElement;
-                  root.style.setProperty('--bg', t.bg);
-                  root.style.setProperty('--bg-secondary', t.bgSecondary);
-                  root.style.setProperty('--border', t.border);
-                  root.style.setProperty('--text', t.text);
-                  root.style.setProperty('--text-dim', t.textDim);
-                  root.style.setProperty('--accent', t.accent);
-                  root.style.setProperty('--accent-hover', t.accentHover);
-                  root.style.setProperty('--accent-text', t.accentText);
-                  root.style.setProperty('--hover', t.hover);
-                  root.style.setProperty('--widget', t.widget);
-                  root.style.setProperty('--search-bg', t.searchBg);
-                  document.body.style.backgroundColor = t.bg;
-                  document.body.style.color = t.text;
-                  localStorage.setItem('patr-theme', key);
-                }}
+                onClick={() => setTheme(key)}
                 style={{
                   background: t.bg,
                   border: `2px solid ${themeName === key ? t.accent : 'rgba(255,255,255,0.1)'}`,

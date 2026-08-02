@@ -16,6 +16,7 @@ import './App.css';
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('home');
+  const [feedKey, setFeedKey] = useState(0);
   const [showComposeModal, setShowComposeModal] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -274,7 +275,7 @@ const AppContent: React.FC = () => {
 
     switch (activeTab) {
       case 'home':
-        return <Feed type="home" showCompose={!isMobile} onUserClick={handleUserClick} onPostClick={handlePostClick} />;
+        return <Feed key={feedKey} type="home" showCompose={!isMobile} onUserClick={handleUserClick} onPostClick={handlePostClick} />;
       case 'explore':
         return <Feed type="explore" showCompose={false} onUserClick={handleUserClick} onPostClick={handlePostClick} />;
       case 'profile':
@@ -318,7 +319,7 @@ const AppContent: React.FC = () => {
           </div>
         );
       default:
-        return <Feed type="home" showCompose={!isMobile} onUserClick={handleUserClick} onPostClick={handlePostClick} />;
+        return <Feed key={feedKey} type="home" showCompose={!isMobile} onUserClick={handleUserClick} onPostClick={handlePostClick} />;
     }
   };
 
@@ -433,6 +434,7 @@ const AppContent: React.FC = () => {
                   setShowProfile(false);
                   setShowPostDetail(false);
                   setShowArticle(false);
+                  setFeedKey(k => k + 1);
                 }}
                 autoFocus
               />

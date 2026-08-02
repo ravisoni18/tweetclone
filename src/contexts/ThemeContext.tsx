@@ -89,8 +89,8 @@ export const themes: Record<ThemeName, Theme> = {
     accent: '#7c3aed',
     accentHover: '#6d28d9',
     accentText: '#ffffff',
-    hover: 'rgba(124,58,237,0.12)',      // clearly visible purple tint on hover
-    activeBg: 'rgba(124,58,237,0.22)',   // strong purple pill for active item
+    hover: '#f0e7fc',      // opaque pale purple — alpha blends washed-out/grey on this light bg
+    activeBg: '#e3d1fa',   // opaque, more saturated purple pill for active item
     widget: '#f0ede8',
     searchBg: '#ebe8e2',
   },
