@@ -5,6 +5,7 @@ import { Post } from '../types';
 import ComposePost from './ComposePost';
 import Profile from './Profile';
 import PostDetail from './PostDetail';
+import HtmlEmbed from './HtmlEmbed';
 import { auth } from '../config/firebase';
 import ArticleEditor from './ArticleEditor';
 
@@ -632,6 +633,8 @@ const Feed: React.FC<FeedProps> = ({ type = 'home', showCompose = true, onUserCl
               <p className="text-white text-sm sm:text-base whitespace-pre-wrap break-words">{post.content}</p>
               
               {renderPostMedia(post)}
+
+              {post.htmlContent && <HtmlEmbed html={post.htmlContent} />}
             </div>
 
             <div className="flex items-center justify-between mt-3 max-w-xs sm:max-w-md">

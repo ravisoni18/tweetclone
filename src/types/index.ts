@@ -23,6 +23,8 @@ export interface Post {
   id: string;
   content: string;
   imageUrl?: string;
+  videoUrl?: string;
+  htmlContent?: string; // Self-contained HTML5 snippet (e.g. a small game) — always rendered sandboxed, see HtmlEmbed.tsx
   createdAt: string;
   updatedAt: string;
   user: User;
@@ -78,6 +80,8 @@ export interface PostDetailResponse {
   id: string;
   content: string;
   imageUrl?: string;
+  videoUrl?: string;
+  htmlContent?: string;
   createdAt: string;
   updatedAt: string;
   user: User;

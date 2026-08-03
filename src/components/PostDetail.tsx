@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { auth } from '../config/firebase';
+import HtmlEmbed from './HtmlEmbed';
 
 interface PostDetailProps {
   postId: string;
@@ -38,6 +39,7 @@ interface PostDetail {
   content: string;
   imageUrl?: string;
   videoUrl?: string; // Add video URL support
+  htmlContent?: string; // Self-contained HTML5 snippet, always rendered sandboxed
   createdAt: string;
   updatedAt: string;
   user: User;
@@ -789,6 +791,9 @@ const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
           
           {/* Enhanced Media Display */}
           {renderPostMedia()}
+
+          {/* HTML5 content (sandboxed) */}
+          {post.htmlContent && <HtmlEmbed html={post.htmlContent} />}
         </div>
 
         {/* Timestamp */}

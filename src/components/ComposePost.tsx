@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Image, Video, X, Globe, Users, Lock, FileText } from 'lucide-react';
+import { Image, Video, X, Globe, Users, Lock, FileText, Gamepad2, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { auth } from '../config/firebase';
 import ArticleEditor from './ArticleEditor';
+import HtmlEmbed from './HtmlEmbed';
 
 interface ComposePostProps {
   onPostCreated?: (newPost: any) => void;
   autoFocus?: boolean;
 }
+
+const MAX_HTML_CONTENT_BYTES = 150 * 1024; // 150KB — must match server-side cap
 
 // Media resizing utility functions
 const resizeImage = (file: File, maxSizeMB: number = 2, quality: number = 0.8): Promise<File> => {
@@ -98,6 +101,10 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
   const [isMobile, setIsMobile] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showArticleEditor, setShowArticleEditor] = useState(false);
+  const [htmlContent, setHtmlContent] = useState<string | null>(null);
+  const [showHtmlEditor, setShowHtmlEditor] = useState(false);
+  const [htmlDraft, setHtmlDraft] = useState('');
+  const [htmlDraftError, setHtmlDraftError] = useState<string | null>(null);
 
   // Check if device is mobile
   useEffect(() => {
@@ -217,11 +224,36 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
     setMediaType(null);
   };
 
+  const openHtmlEditor = () => {
+    setHtmlDraft(htmlContent || '');
+    setHtmlDraftError(null);
+    setShowHtmlEditor(true);
+  };
+
+  const saveHtmlDraft = () => {
+    if (!htmlDraft.trim()) {
+      setHtmlDraftError('Paste some HTML5 content first.');
+      return;
+    }
+    const byteSize = new Blob([htmlDraft]).size;
+    if (byteSize > MAX_HTML_CONTENT_BYTES) {
+      setHtmlDraftError(`Too large (${(byteSize / 1024).toFixed(0)}KB). Maximum size is ${MAX_HTML_CONTENT_BYTES / 1024}KB.`);
+      return;
+    }
+    setHtmlContent(htmlDraft);
+    setShowHtmlEditor(false);
+  };
+
+  const removeHtmlContent = () => {
+    setHtmlContent(null);
+  };
+
   const resetForm = () => {
     setContent('');
     setSelectedMedia(null);
     setMediaPreview(null);
     setMediaType(null);
+    setHtmlContent(null);
     setIsLoading(false);
     setValidationError(null);
   };
@@ -260,8 +292,10 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
       console.error('❌ Text content is required for all posts');
       
       // Show contextual error dialog
-      const message = selectedMedia 
+      const message = selectedMedia
         ? 'Please add some text to describe your image/video'
+        : htmlContent
+        ? 'Please add some text to describe your HTML5 content'
         : 'Please write something for your post';
       
       showValidationError(message);
@@ -338,6 +372,11 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
         formData.append(fieldName, selectedMedia);
         formData.append('mediaType', mediaType || 'image');
         console.log(`🎬 Media attached: ${selectedMedia.name} (${(selectedMedia.size / 1024 / 1024).toFixed(2)}MB) as ${fieldName}`);
+      }
+
+      if (htmlContent) {
+        formData.append('htmlContent', htmlContent);
+        console.log(`🕹️ HTML5 content attached: ${(new Blob([htmlContent]).size / 1024).toFixed(1)}KB`);
       }
 
       // Send request with Authorization header
@@ -553,6 +592,29 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
                 </div>
               )}
 
+              {/* HTML5 content attached indicator */}
+              {htmlContent && !mediaPreview && (
+                <div className="relative mt-3">
+                  <div className="flex items-center justify-between p-3 rounded-xl border border-gray-700" style={{ background: 'var(--bg-secondary, #16181c)' }}>
+                    <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--text, #e7e9ea)' }}>
+                      <Gamepad2 className="w-4 h-4 text-green-400" />
+                      <span className="font-medium">HTML5 content attached</span>
+                      <span className="text-xs" style={{ color: 'var(--text-dim, #71767b)' }}>
+                        ({(new Blob([htmlContent]).size / 1024).toFixed(1)}KB)
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button type="button" onClick={openHtmlEditor} className="text-xs text-blue-400 hover:underline" disabled={isLoading}>
+                        Edit
+                      </button>
+                      <button type="button" onClick={removeHtmlContent} className="p-1 rounded-full hover:bg-gray-800 transition-colors" disabled={isLoading}>
+                        <X className="w-4 h-4 text-gray-400" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Bottom Actions */}
               <div className={`flex items-center justify-between ${isMobile ? 'mt-3 pt-3' : 'mt-4 pt-4'} border-t border-gray-800`} style={{ borderColor: 'var(--border)' }}>
                 <div className="flex items-center space-x-3 sm:space-x-4">
@@ -591,10 +653,21 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
                     <FileText className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} />
                   </button>
 
+                  {/* HTML5 Content Button */}
+                  <button
+                    type="button"
+                    onClick={openHtmlEditor}
+                    disabled={isLoading || isProcessingMedia}
+                    className={`text-amber-400 hover:text-amber-300 transition-colors touch-manipulation ${isMobile ? 'p-2' : ''} ${isProcessingMedia || isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    title="Add HTML5 content (e.g. a small game)"
+                  >
+                    <Gamepad2 className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} />
+                  </button>
+
                   {/* File size limits indicator */}
                   {!isMobile && (
                     <span className="text-xs text-gray-500">
-                      Images: 5MB • Videos: 50MB
+                      Images: 5MB • Videos: 50MB • HTML5: {MAX_HTML_CONTENT_BYTES / 1024}KB
                     </span>
                   )}
 
@@ -691,6 +764,91 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
             }
           }}
         />
+      )}
+
+      {/* HTML5 Content Editor Modal */}
+      {showHtmlEditor && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setShowHtmlEditor(false)}
+        >
+          <div
+            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl border border-gray-700"
+            style={{ background: 'var(--bg, #000)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
+              <h2 className="text-lg font-bold flex items-center space-x-2" style={{ color: 'var(--text, #e7e9ea)' }}>
+                <Gamepad2 className="w-5 h-5 text-amber-400" />
+                <span>Add HTML5 content</span>
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowHtmlEditor(false)}
+                className="p-2 rounded-full hover:bg-gray-900 transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-3">
+              <p className="text-xs flex items-start space-x-1.5" style={{ color: 'var(--text-dim, #71767b)' }}>
+                <ShieldCheck className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>
+                  Paste a self-contained HTML file (inline CSS/JS, e.g. a small canvas game). It always runs
+                  inside a sandboxed frame with no access to cookies, local storage, or the Patr API — viewers
+                  must click "Run" to start it. Max {MAX_HTML_CONTENT_BYTES / 1024}KB.
+                </span>
+              </p>
+
+              <textarea
+                value={htmlDraft}
+                onChange={(e) => { setHtmlDraft(e.target.value); setHtmlDraftError(null); }}
+                placeholder={'<!doctype html>\n<html>\n  <body>\n    <canvas id="game"></canvas>\n    <script>/* your game code */</script>\n  </body>\n</html>'}
+                spellCheck={false}
+                rows={10}
+                className="w-full font-mono text-xs bg-transparent border rounded-lg p-3 outline-none resize-none"
+                style={{ borderColor: 'var(--border)', color: 'var(--text, #e7e9ea)' }}
+              />
+
+              <div className="flex items-center justify-between text-xs" style={{ color: 'var(--text-dim, #71767b)' }}>
+                <span>{(new Blob([htmlDraft]).size / 1024).toFixed(1)}KB / {MAX_HTML_CONTENT_BYTES / 1024}KB</span>
+              </div>
+
+              {htmlDraftError && (
+                <div className="p-3 bg-red-900/20 border border-red-600/30 rounded-lg">
+                  <span className="text-red-400 text-sm font-medium">{htmlDraftError}</span>
+                </div>
+              )}
+
+              {htmlDraft.trim() && (
+                <div>
+                  <p className="text-xs font-semibold mb-1" style={{ color: 'var(--text-dim, #71767b)' }}>Preview</p>
+                  <HtmlEmbed html={htmlDraft} />
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t flex items-center justify-end space-x-3" style={{ borderColor: 'var(--border)' }}>
+              <button
+                type="button"
+                onClick={() => setShowHtmlEditor(false)}
+                className="px-4 py-2 rounded-full font-semibold text-sm transition-colors"
+                style={{ color: 'var(--text, #e7e9ea)' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveHtmlDraft}
+                className="px-5 py-2 rounded-full font-semibold text-sm transition-all hover:opacity-90"
+                style={{ background: 'var(--accent, #1d9bf0)', color: 'var(--accent-text, #fff)' }}
+              >
+                Add to post
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

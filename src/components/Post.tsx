@@ -3,6 +3,7 @@ import { Post as PostType, User } from '../types';
 import { Heart, MessageCircle, Repeat2, Bookmark, Share, MoreHorizontal, Trash2, Play } from 'lucide-react';
 import { postsService } from '../services/postsService';
 import { useAuth } from '../contexts/AuthContext';
+import HtmlEmbed from './HtmlEmbed';
 
 interface PostProps {
   post: PostType;
@@ -264,6 +265,9 @@ const Post: React.FC<PostProps> = ({ post, onPostUpdate, onPostDelete, showThrea
 
               {/* Enhanced Media Display */}
               {renderMedia()}
+
+              {/* HTML5 content (sandboxed) */}
+              {post.htmlContent && <HtmlEmbed html={post.htmlContent} />}
 
               {/* Quote Tweet */}
               {post.quoteTweet && (

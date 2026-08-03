@@ -503,6 +503,7 @@ function getPostDetails($db, $postId, $userId = null) {
 
                 'imageUrl' => $post['image_url'],
                 'videoUrl' => $post['video_url'] ?? null, // NEW: Video URL support
+                'htmlContent' => $post['html_content'] ?? null, // NEW: sandboxed HTML5 embed
                 'createdAt' => $post['created_at'],
                 'updatedAt' => $post['updated_at'],
                 'user' => [
@@ -925,15 +926,16 @@ class Post {
     public function create($postData) {
         try {
             $id = 'post_' . time() . '_' . uniqid();
-            $query = "INSERT INTO posts (id, user_id, content, image_url, video_url, created_at, updated_at) 
-                     VALUES (:id, :user_id, :content, :image_url, :video_url, NOW(), NOW())";
+            $query = "INSERT INTO posts (id, user_id, content, image_url, video_url, html_content, created_at, updated_at)
+                     VALUES (:id, :user_id, :content, :image_url, :video_url, :html_content, NOW(), NOW())";
             $stmt = $this->conn->prepare($query);
             $success = $stmt->execute([
                 ':id' => $id,
                 ':user_id' => $postData['user_id'],
                 ':content' => $postData['content'],
                 ':image_url' => $postData['image_url'],
-                ':video_url' => $postData['video_url'] ?? null // NEW: Video URL support
+                ':video_url' => $postData['video_url'] ?? null, // NEW: Video URL support
+                ':html_content' => $postData['html_content'] ?? null // NEW: sandboxed HTML5 embed
             ]);
             
             if ($success) {
@@ -964,6 +966,7 @@ class Post {
 
                     'imageUrl' => $post['image_url'],
                     'videoUrl' => $post['video_url'] ?? null, // NEW: Video URL support
+                    'htmlContent' => $post['html_content'] ?? null, // NEW: sandboxed HTML5 embed
                     'createdAt' => $post['created_at'],
                     'updatedAt' => $post['updated_at'],
                     'user' => [
@@ -1038,6 +1041,7 @@ try {
         content TEXT NOT NULL,
         image_url TEXT,
         video_url TEXT,
+        html_content MEDIUMTEXT,
         likes_count INT DEFAULT 0,
         retweets_count INT DEFAULT 0,
         replies_count INT DEFAULT 0,
@@ -1057,6 +1061,18 @@ try {
     } catch (Exception $e) {
         // Column may already exist, ignore error
         error_log("📝 video_url column may already exist");
+    }
+
+    // Add html_content column to existing posts table if it doesn't exist
+    // Holds a self-contained HTML5 snippet (e.g. a small game); always rendered
+    // client-side inside a sandboxed iframe with no same-origin/top-navigation
+    // access — see HtmlEmbed.tsx. Never rendered unsandboxed.
+    try {
+        $db->exec("ALTER TABLE posts ADD COLUMN html_content MEDIUMTEXT");
+        error_log("✅ Added html_content column to posts table");
+    } catch (Exception $e) {
+        // Column may already exist, ignore error
+        error_log("📝 html_content column may already exist");
     }
 
     // Follows table
@@ -2190,6 +2206,7 @@ case 'users':
 
                                 'imageUrl' => $post['image_url'],
                                 'videoUrl' => $post['video_url'] ?? null, // NEW: Video URL support
+                                'htmlContent' => $post['html_content'] ?? null, // NEW: sandboxed HTML5 embed
                                 'createdAt' => $post['created_at'],
                                 'updatedAt' => $post['updated_at'],
                                 'user' => [
@@ -2333,7 +2350,8 @@ case 'users':
                 
                 $imageUrl = null;
                 $videoUrl = null;
-                
+                $htmlContent = null;
+
                 try {
                     // Handle image upload (existing functionality)
                     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
@@ -2343,7 +2361,7 @@ case 'users':
                             error_log("🖼️ Image uploaded: $imageUrl");
                         }
                     }
-                    
+
                     // NEW: Handle video upload
                     if (isset($_FILES['video']) && $_FILES['video']['error'] === UPLOAD_ERR_OK) {
                         $videoUpload = handleMediaUpload('video', 'posts');
@@ -2352,16 +2370,30 @@ case 'users':
                             error_log("🎥 Video uploaded: $videoUrl");
                         }
                     }
+
+                    // NEW: Handle HTML5 content (e.g. a small game). This is NEVER
+                    // sanitized or trusted — the frontend always renders it inside a
+                    // sandboxed iframe (sandbox="allow-scripts" only, no
+                    // allow-same-origin/allow-top-navigation/allow-popups/allow-forms),
+                    // which is the actual security boundary. We only cap size here.
+                    if (!empty($data['htmlContent'])) {
+                        $htmlContent = $data['htmlContent'];
+                        $maxHtmlBytes = 150 * 1024; // 150KB
+                        if (strlen($htmlContent) > $maxHtmlBytes) {
+                            sendError('HTML5 content is too large. Maximum size is 150KB.', 400);
+                        }
+                    }
                 } catch (Exception $e) {
                     error_log("❌ Media upload error: " . $e->getMessage());
                     sendError($e->getMessage(), 400);
                 }
-                
+
                 $postData = [
                     'user_id' => $user['id'],
                     'content' => sanitizeInput($data['content']),
                     'image_url' => $imageUrl,
-                    'video_url' => $videoUrl // NEW: Video URL support
+                    'video_url' => $videoUrl, // NEW: Video URL support
+                    'html_content' => $htmlContent // NEW: sandboxed HTML5 embed
                 ];
                 
                 $newPost = $postModel->create($postData);
