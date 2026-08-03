@@ -507,12 +507,6 @@ const ComposePost: React.FC<ComposePostProps> = ({ onPostCreated, autoFocus = fa
                 </div>
               )}
 
-              {/* Character count and requirements hint */}
-              {!content.trim() && !validationError && (
-                <div className="mt-2 text-gray-500 text-sm">
-                  <span className="text-red-400">*</span> Text content is required for all posts
-                </div>
-              )}
 
               {/* Media Processing Indicator */}
               {isProcessingMedia && (

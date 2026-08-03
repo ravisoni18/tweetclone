@@ -513,10 +513,13 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ onUserClick }) => {
                       <div className="min-w-0 flex-1">
                         <h3 className="font-bold text-white hover:underline truncate">{suggestedUser.displayName}</h3>
                         <p className="text-gray-400 text-sm truncate">@{suggestedUser.username || suggestedUser.email?.split('@')[0]}</p>
-                        <div className="flex items-center space-x-3 text-xs text-gray-500">
-                          <span>{suggestedUser.followersCount} followers</span>
+                        <div className="flex items-center flex-wrap gap-x-1.5 mt-0.5 text-xs text-gray-500 whitespace-nowrap">
+                          <span>{suggestedUser.followersCount} follower{suggestedUser.followersCount !== 1 ? 's' : ''}</span>
                           {suggestedUser.postsCount !== undefined && (
-                            <span>• {suggestedUser.postsCount} posts</span>
+                            <>
+                              <span aria-hidden="true">·</span>
+                              <span>{suggestedUser.postsCount} post{suggestedUser.postsCount !== 1 ? 's' : ''}</span>
+                            </>
                           )}
                         </div>
                       </div>

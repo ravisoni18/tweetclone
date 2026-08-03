@@ -413,28 +413,6 @@ const Feed: React.FC<FeedProps> = ({ type = 'home', showCompose = true, onUserCl
       .substring(0, 2);
   };
 
-  const renderStarRating = (rating: number) => {
-    if (!rating || rating <= 0) return null;
-    
-    return (
-      <div className="flex items-center space-x-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`w-3 h-3 ${
-              star <= rating 
-                ? 'text-yellow-400 fill-yellow-400' 
-                : 'text-gray-600'
-            }`}
-          />
-        ))}
-        <span className="text-xs text-gray-400 ml-1">
-          {rating.toFixed(1)}
-        </span>
-      </div>
-    );
-  };
-
   const renderPostMedia = (post: Post) => {
     const hasImage = post.imageUrl;
     const hasVideo = (post as any).videoUrl;
@@ -628,6 +606,18 @@ const Feed: React.FC<FeedProps> = ({ type = 'home', showCompose = true, onUserCl
               <span className="text-gray-400 text-xs sm:text-sm flex-shrink-0">
                 {formatTimeAgo(post.createdAt)}
               </span>
+              {post.averageRating !== null &&
+               post.averageRating !== undefined &&
+               post.averageRating > 0 &&
+               post.ratingCount !== null &&
+               post.ratingCount !== undefined &&
+               post.ratingCount > 0 && (
+                <span className="hidden sm:flex items-center space-x-1 text-xs text-yellow-400 flex-shrink-0">
+                  <Star className="w-3 h-3 fill-yellow-400" />
+                  <span>{post.averageRating.toFixed(1)}</span>
+                  <span className="text-gray-500">({post.ratingCount})</span>
+                </span>
+              )}
               <div className="ml-auto">
                 <button 
                   className="p-2 rounded-full hover:bg-gray-800 transition-colors touch-manipulation"
@@ -642,20 +632,6 @@ const Feed: React.FC<FeedProps> = ({ type = 'home', showCompose = true, onUserCl
               <p className="text-white text-sm sm:text-base whitespace-pre-wrap break-words">{post.content}</p>
               
               {renderPostMedia(post)}
-
-              {post.averageRating !== null && 
-               post.averageRating !== undefined && 
-               post.averageRating > 0 && 
-               post.ratingCount !== null && 
-               post.ratingCount !== undefined && 
-               post.ratingCount > 0 && (
-                <div className="mt-3 flex items-center space-x-2">
-                  {renderStarRating(post.averageRating)}
-                  <span className="text-xs text-gray-500">
-                    ({post.ratingCount} rating{post.ratingCount !== 1 ? 's' : ''})
-                  </span>
-                </div>
-              )}
             </div>
 
             <div className="flex items-center justify-between mt-3 max-w-xs sm:max-w-md">

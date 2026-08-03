@@ -145,19 +145,27 @@ const Post: React.FC<PostProps> = ({ post, onPostUpdate, onPostDelete, showThrea
       <div className="mt-3">
         {/* Image rendering */}
         {hasImage && (
-          <img
-            src={post.imageUrl}
-            alt="Post image"
-            className="rounded-2xl max-w-full max-h-96 object-cover border border-gray-700"
-          />
+          <div
+            className="w-full flex items-center justify-center rounded-2xl overflow-hidden border border-gray-700"
+            style={{ background: 'var(--bg-secondary, #16181c)', maxHeight: '28rem' }}
+          >
+            <img
+              src={post.imageUrl}
+              alt="Post image"
+              className="max-w-full max-h-[28rem] object-contain"
+            />
+          </div>
         )}
 
         {/* Video rendering */}
         {hasVideo && (
-          <div className="relative rounded-2xl overflow-hidden border border-gray-700 bg-black">
+          <div
+            className="relative w-full flex items-center justify-center rounded-2xl overflow-hidden border border-gray-700"
+            style={{ background: 'var(--bg-secondary, #16181c)', maxHeight: '28rem' }}
+          >
             {!videoError ? (
               <video
-                className="w-full max-h-96 object-contain"
+                className="max-w-full max-h-[28rem] object-contain"
                 controls
                 preload="metadata"
                 onError={() => {

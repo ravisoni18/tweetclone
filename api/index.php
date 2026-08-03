@@ -2119,7 +2119,8 @@ case 'users':
                             preg_match_all('/#([a-zA-Z0-9_]+)/', $post['content'], $matches);
                             foreach ($matches[1] as $hashtag) {
                                 $tag = strtolower($hashtag);
-                                if (strlen($tag) > 1 && strlen($tag) < 20) {
+                                // Skip numeric-only tags (e.g. "#039") — not real hashtags
+                                if (strlen($tag) > 1 && strlen($tag) < 20 && !ctype_digit($tag)) {
                                     $hashtags[$tag] = ($hashtags[$tag] ?? 0) + 1;
                                 }
                             }

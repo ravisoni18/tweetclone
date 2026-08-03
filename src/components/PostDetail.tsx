@@ -798,7 +798,7 @@ const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
         </div>
 
         {/* Rating Section */}
-        <div className="mb-6 p-4 bg-gray-900/50 rounded-lg">
+        <div className="mb-6 p-3 rounded-lg" style={{ background: 'var(--hover, rgba(255,255,255,0.06))' }}>
           <div className="flex items-center justify-between mb-3">
             <h4 className="text-white font-semibold">Rating</h4>
             {post.ratingCount > 0 && (
