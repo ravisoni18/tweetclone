@@ -572,7 +572,7 @@ const Feed: React.FC<FeedProps> = ({ type = 'home', showCompose = true, onUserCl
     return (
       <div 
         key={post.id} 
-        className="border-b border-gray-800 p-3 sm:p-4 hover:bg-gray-950/50 transition-colors touch-manipulation cursor-pointer"
+        className="border-b border-gray-800 p-3 sm:p-4 hover:bg-[var(--hover)] transition-colors touch-manipulation cursor-pointer"
         onClick={() => navigateToPostDetail(post.id)}
       >
         <div className="flex space-x-3">
@@ -718,7 +718,7 @@ const Feed: React.FC<FeedProps> = ({ type = 'home', showCompose = true, onUserCl
     return (
       <div 
         key={article.id} 
-        className="border-b border-gray-800 p-6 hover:bg-gray-950/50 transition-colors cursor-pointer"
+        className="border-b border-gray-800 p-6 hover:bg-[var(--hover)] transition-colors cursor-pointer"
         onClick={() => navigateToArticle(article.id)}
       >
         {article.coverImageUrl && (

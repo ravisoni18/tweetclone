@@ -819,7 +819,7 @@ const Profile: React.FC<ProfileProps> = ({ userId, onBack, onArticleClick }) => 
             currentTabData.map((article: any) => (
               <div 
                 key={article.id} 
-                className="p-6 hover:bg-gray-950/50 transition-colors cursor-pointer"
+                className="p-6 hover:bg-[var(--hover)] transition-colors cursor-pointer"
                 onClick={() => {
                   console.log('📰 Article clicked:', article.id);
                   if (onArticleClick) {

@@ -195,7 +195,7 @@ const Post: React.FC<PostProps> = ({ post, onPostUpdate, onPostDelete, showThrea
   };
 
   return (
-    <article className="border-b border-gray-800 hover:bg-gray-950/30 transition-colors cursor-pointer">
+    <article className="border-b border-gray-800 hover:bg-[var(--hover)] transition-colors cursor-pointer">
       <div className="p-4">
         <div className="flex space-x-3">
           {/* Avatar */}
@@ -259,7 +259,7 @@ const Post: React.FC<PostProps> = ({ post, onPostUpdate, onPostDelete, showThrea
 
               {/* Quote Tweet */}
               {post.quoteTweet && (
-                <div className="mt-3 border border-gray-700 rounded-2xl p-3 hover:bg-gray-900/50 transition-colors">
+                <div className="mt-3 border border-gray-700 rounded-2xl p-3 hover:bg-[var(--hover)] transition-colors">
                   <div className="flex space-x-2">
                     <img
                       src={post.quoteTweet.user.profileImageUrl || `https://ui-avatars.com/api/?name=${post.quoteTweet.user.displayName}&background=6366f1&color=ffffff`}

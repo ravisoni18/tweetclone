@@ -554,7 +554,7 @@ const PostDetail: React.FC<PostDetailProps> = ({ postId, onBack }) => {
   };
 
   const renderComment = (comment: Comment) => (
-    <div key={comment.id} className="border-b border-gray-800 p-4 hover:bg-gray-950/30 transition-colors">
+    <div key={comment.id} className="border-b border-gray-800 p-4 hover:bg-[var(--hover)] transition-colors">
       <div className="flex space-x-3">
         {/* Avatar */}
         <div className="flex-shrink-0">
